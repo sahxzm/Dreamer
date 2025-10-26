@@ -9,12 +9,31 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.5.22"
+    "@iconify/vue": "^5.0.0",
+    "@supabase/supabase-js": "^2.76.1",
+    "@tanstack/vue-query": "^5.90.5",
+    "autoprefixer": "^10.4.21",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.18",
+    "echarts": "^5.6.0",
+    "howler": "^2.2.4",
+    "pinia": "^2.3.1",
+    "postcss": "^8.5.6",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss": "^4.1.16",
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^24.6.0",
+    "@types/echarts": "^4.9.22",
+    "@types/howler": "^2.2.12",
+    "@types/lodash": "^4.17.20",
+    "@types/node": "^24.9.1",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
+    "shadcn-vue": "^2.3.2",
     "typescript": "~5.9.3",
     "vite": "^7.1.7",
     "vue-tsc": "^3.1.0"
