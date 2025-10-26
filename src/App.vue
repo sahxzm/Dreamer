@@ -3,20 +3,54 @@ import { RouterView, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { onMounted, ref } from 'vue'
 import { useAuthStore } from './stores/auth'
+import { useThemeStore } from './stores/theme'
 import AuthModal from './components/AuthModal.vue'
 import UserProfile from './components/UserProfile.vue'
+import LoadingScreen from './components/LoadingScreen.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
+
+// State
+const isLoading = ref(true)
+const hasError = ref(false)
 
 // Auth modal ref
 const authModal = ref<InstanceType<typeof AuthModal> | null>(null)
 const userProfile = ref<InstanceType<typeof UserProfile> | null>(null)
 
-// Initialize auth on mount
+// Initialize app on mount
 onMounted(async () => {
-  await authStore.initializeAuth()
-  await authStore.restoreSession()
+  console.log('App mounting...')
+  try {
+    console.log('Initializing theme...')
+    themeStore.initializeTheme()
+    
+    console.log('Initializing auth...')
+    await authStore.initializeAuth()
+    await authStore.restoreSession()
+    
+    console.log('App initialized successfully')
+  } catch (error) {
+    console.error('Error initializing app:', error)
+    hasError.value = true
+  } finally {
+    // Remove loading screen after a short delay
+    setTimeout(() => {
+      console.log('Hiding loading screen...')
+      isLoading.value = false
+    }, 1000)
+    
+    // Fallback: always show app after 3 seconds
+    setTimeout(() => {
+      if (isLoading.value) {
+        console.log('Fallback: forcing app to show')
+        isLoading.value = false
+        hasError.value = false
+      }
+    }, 3000)
+  }
 })
 
 // Auth actions
@@ -24,9 +58,13 @@ const openAuthModal = (mode: 'signin' | 'signup' = 'signin') => {
   authModal.value?.openModal(mode)
 }
 
-const openUserProfile = () => {
-  userProfile.value?.openProfile()
+const reloadPage = () => {
+  window.location.reload()
 }
+
+// const openUserProfile = () => {
+//   userProfile.value?.openProfile()
+// }
 
 const navItems = [
   { path: '/', label: 'DASH', icon: 'lucide:layout-dashboard' },
@@ -35,13 +73,31 @@ const navItems = [
   { path: '/focus', label: 'FOCUS', icon: 'lucide:clock' },
   { path: '/journal', label: 'JOURNAL', icon: 'lucide:book-open' },
   { path: '/goals', label: 'GOALS', icon: 'lucide:target' },
+  { path: '/streaks', label: 'STREAKS', icon: 'lucide:flame' },
   { path: '/bookmarks', label: 'BOOKMARKS', icon: 'lucide:link' },
   { path: '/settings', label: 'SETTINGS', icon: 'lucide:settings' }
 ]
 </script>
 
 <template>
-  <div class="app-shell">
+  <!-- Loading Screen -->
+  <LoadingScreen v-if="isLoading" />
+  
+  <!-- Error Screen -->
+  <div v-else-if="hasError" class="error-screen">
+    <div class="error-content">
+      <Icon icon="lucide:alert-circle" class="error-icon" />
+      <h2 class="error-title">Something went wrong</h2>
+      <p class="error-message">Please refresh the page to try again.</p>
+      <button @click="reloadPage" class="retry-btn">
+        <Icon icon="lucide:refresh-cw" class="btn-icon" />
+        Refresh Page
+      </button>
+    </div>
+  </div>
+  
+  <!-- Main App -->
+  <div v-else class="app-shell">
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo">
@@ -296,6 +352,75 @@ const navItems = [
   position: relative;
   z-index: 1;
   overflow-y: auto;
+}
+
+/* Error Screen */
+.error-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-background, #0f0f17);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+  padding: 40px;
+  background: rgba(15, 15, 25, 0.8);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 20px;
+  backdrop-filter: blur(20px);
+}
+
+.error-icon {
+  font-size: 48px;
+  color: #ef4444;
+}
+
+.error-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.error-message {
+  font-size: 1rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-btn:hover {
+  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+}
+
+.btn-icon {
+  font-size: 16px;
 }
 
 /* Responsive design */

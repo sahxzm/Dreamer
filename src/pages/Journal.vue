@@ -19,45 +19,16 @@ const newEntry = ref({
   date: new Date().toISOString().split('T')[0]
 })
 
-// Mock journal entries
-const journalEntries = ref([
-  {
-    id: 1,
-    title: 'Great day at work!',
-    content: 'Today I accomplished so much at work. I finished the project proposal and got positive feedback from my manager. Feeling really motivated to keep pushing forward.',
-    mood: 'happy',
-    tags: ['work', 'achievement', 'motivation'],
-    date: '2024-01-15',
-    createdAt: '2024-01-15T18:30:00Z'
-  },
-  {
-    id: 2,
-    title: 'Reflecting on my goals',
-    content: 'I realized I need to be more consistent with my morning routine. The days I follow it, I feel so much more productive and focused.',
-    mood: 'thoughtful',
-    tags: ['goals', 'routine', 'productivity'],
-    date: '2024-01-14',
-    createdAt: '2024-01-14T20:15:00Z'
-  },
-  {
-    id: 3,
-    title: 'Challenging workout',
-    content: 'Pushed myself really hard at the gym today. My legs are sore but I feel strong. Consistency is key - I can see the progress.',
-    mood: 'accomplished',
-    tags: ['fitness', 'challenge', 'progress'],
-    date: '2024-01-13',
-    createdAt: '2024-01-13T19:45:00Z'
-  },
-  {
-    id: 4,
-    title: 'Learning new skills',
-    content: 'Spent 2 hours learning Vue.js today. The concepts are starting to click. I love how it makes building interfaces so intuitive.',
-    mood: 'curious',
-    tags: ['learning', 'programming', 'growth'],
-    date: '2024-01-12',
-    createdAt: '2024-01-12T21:00:00Z'
-  }
-])
+// Journal entries - will be loaded from real data source
+const journalEntries = ref<Array<{
+  id: number
+  title: string
+  content: string
+  mood: string
+  tags: string[]
+  date: string
+  createdAt: string
+}>>([])
 
 // Reflection templates
 const reflectionTemplates = ref([

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useLocalStorage } from '../utils/storage'
 
 // Task state
 const currentView = ref<'today' | 'backlog'>('today')
@@ -8,17 +9,15 @@ const showCompleted = ref(false)
 const newTaskText = ref('')
 const newTaskPriority = ref<'high' | 'medium' | 'low'>('medium')
 
-// Mock tasks data
-const tasks = ref([
-  { id: 1, text: 'Complete project proposal', completed: false, priority: 'high', dueDate: '2024-01-15', category: 'work' },
-  { id: 2, text: 'Review code changes', completed: true, priority: 'medium', dueDate: '2024-01-14', category: 'work' },
-  { id: 3, text: 'Team standup meeting', completed: false, priority: 'high', dueDate: '2024-01-15', category: 'meeting' },
-  { id: 4, text: 'Update documentation', completed: false, priority: 'low', dueDate: '2024-01-16', category: 'work' },
-  { id: 5, text: 'Gym workout', completed: false, priority: 'medium', dueDate: '2024-01-15', category: 'health' },
-  { id: 6, text: 'Read React documentation', completed: false, priority: 'low', dueDate: '2024-01-20', category: 'learning' },
-  { id: 7, text: 'Plan weekend trip', completed: false, priority: 'low', dueDate: '2024-01-18', category: 'personal' },
-  { id: 8, text: 'Fix bug in authentication', completed: true, priority: 'high', dueDate: '2024-01-13', category: 'work' }
-])
+// Tasks data with local storage persistence
+const tasks = useLocalStorage<Array<{
+  id: number
+  text: string
+  completed: boolean
+  priority: 'high' | 'medium' | 'low'
+  dueDate: string
+  category: string
+}>>('tasks', [])
 
 // Computed properties
 const todayTasks = computed(() => {
@@ -52,41 +51,42 @@ const completionRate = computed(() => {
 
 // Task actions
 const toggleTask = (taskId: number) => {
-  const task = tasks.value.find(t => t.id === taskId)
-  if (task) {
-    task.completed = !task.completed
-  }
+  tasks.value = tasks.value.map(task => 
+    task.id === taskId 
+      ? { ...task, completed: !task.completed }
+      : task
+  )
 }
 
 const addTask = () => {
   if (!newTaskText.value.trim()) return
   
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0] || ''
+  
   const newTask = {
     id: Date.now(),
     text: newTaskText.value.trim(),
     completed: false,
     priority: newTaskPriority.value,
-    dueDate: currentView.value === 'today' ? today : '',
+    dueDate: today,
     category: 'general'
   }
   
-  tasks.value.push(newTask)
+  tasks.value = [...tasks.value, newTask]
   newTaskText.value = ''
+  newTaskPriority.value = 'medium'
 }
 
 const moveAllToToday = () => {
-  const today = new Date().toISOString().split('T')[0]
-  backlogTasks.value.forEach(task => {
-    task.dueDate = today
-  })
+  const today = new Date().toISOString().split('T')[0] || ''
+  tasks.value = tasks.value.map(task => ({
+    ...task,
+    dueDate: today
+  }))
 }
 
 const deleteTask = (taskId: number) => {
-  const index = tasks.value.findIndex(t => t.id === taskId)
-  if (index > -1) {
-    tasks.value.splice(index, 1)
-  }
+  tasks.value = tasks.value.filter(task => task.id !== taskId)
 }
 
 const getPriorityColor = (priority: string) => {
@@ -117,7 +117,7 @@ const getPriorityColor = (priority: string) => {
             <Icon icon="lucide:arrow-right" class="btn-icon" />
             Move All to Today
           </button>
-          <button class="action-btn primary">
+          <button @click="addTask" class="action-btn primary">
             <Icon icon="lucide:plus" class="btn-icon" />
             Add Task
           </button>

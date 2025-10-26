@@ -4,8 +4,18 @@
   font-weight: 400;
 
   color-scheme: dark;
-  color: #e2e8f0;
-  background-color: #0f0f17;
+  color: var(--color-text, #e2e8f0);
+  background-color: var(--color-background, #0f0f17);
+
+  /* Theme variables */
+  --color-primary: #8b5cf6;
+  --color-secondary: #a855f7;
+  --color-background: #0f0f17;
+  --color-surface: rgba(15, 15, 25, 0.8);
+  --color-text: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-border: rgba(139, 92, 246, 0.2);
+  --color-accent: #8b5cf6;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -25,11 +35,12 @@ html, body {
 }
 
 body {
-  background: 
+  background: var(--body-background, 
     radial-gradient(1200px 800px at 80% 20%, rgba(139, 92, 246, 0.1), transparent),
     linear-gradient(180deg, rgba(255,255,255,0.02), transparent),
-    linear-gradient(45deg, rgba(139, 92, 246, 0.05), transparent);
-  color: #e2e8f0;
+    linear-gradient(45deg, rgba(139, 92, 246, 0.05), transparent)
+  );
+  color: var(--color-text, #e2e8f0);
 }
 
 #app {

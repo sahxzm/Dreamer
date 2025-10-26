@@ -19,81 +19,19 @@ const newBookmark = ref({
   isFavorite: false
 })
 
-// Mock bookmarks data
-const bookmarks = ref([
-  {
-    id: 1,
-    title: 'Vue.js Documentation',
-    url: 'https://vuejs.org/guide/',
-    description: 'Official Vue.js guide and API reference',
-    category: 'development',
-    tags: ['vue', 'javascript', 'frontend'],
-    isFavorite: true,
-    createdAt: '2024-01-15T10:30:00Z',
-    lastAccessed: '2024-01-15T14:20:00Z',
-    accessCount: 12
-  },
-  {
-    id: 2,
-    title: 'TypeScript Handbook',
-    url: 'https://www.typescriptlang.org/docs/',
-    description: 'Complete TypeScript documentation and tutorials',
-    category: 'development',
-    tags: ['typescript', 'javascript', 'programming'],
-    isFavorite: false,
-    createdAt: '2024-01-14T09:15:00Z',
-    lastAccessed: '2024-01-14T16:45:00Z',
-    accessCount: 8
-  },
-  {
-    id: 3,
-    title: 'Design System Gallery',
-    url: 'https://designsystemsrepo.com/',
-    description: 'Collection of design systems from top companies',
-    category: 'design',
-    tags: ['design', 'ui', 'ux', 'systems'],
-    isFavorite: true,
-    createdAt: '2024-01-13T11:20:00Z',
-    lastAccessed: '2024-01-13T15:30:00Z',
-    accessCount: 5
-  },
-  {
-    id: 4,
-    title: 'Productivity Tips',
-    url: 'https://blog.notion.so/productivity-tips',
-    description: 'Best practices for staying productive and organized',
-    category: 'productivity',
-    tags: ['productivity', 'tips', 'organization'],
-    isFavorite: false,
-    createdAt: '2024-01-12T14:10:00Z',
-    lastAccessed: '2024-01-12T14:10:00Z',
-    accessCount: 3
-  },
-  {
-    id: 5,
-    title: 'CSS Grid Guide',
-    url: 'https://css-tricks.com/snippets/css/complete-guide-grid/',
-    description: 'Complete guide to CSS Grid layout',
-    category: 'development',
-    tags: ['css', 'grid', 'layout', 'frontend'],
-    isFavorite: false,
-    createdAt: '2024-01-11T16:45:00Z',
-    lastAccessed: '2024-01-11T16:45:00Z',
-    accessCount: 2
-  },
-  {
-    id: 6,
-    title: 'Figma Community',
-    url: 'https://www.figma.com/community',
-    description: 'Design resources, templates, and plugins',
-    category: 'design',
-    tags: ['figma', 'design', 'templates', 'resources'],
-    isFavorite: true,
-    createdAt: '2024-01-10T13:30:00Z',
-    lastAccessed: '2024-01-10T13:30:00Z',
-    accessCount: 7
-  }
-])
+// Bookmarks data - will be loaded from real data source
+const bookmarks = ref<Array<{
+  id: number
+  title: string
+  url: string
+  description: string
+  category: string
+  tags: string[]
+  isFavorite: boolean
+  createdAt: string
+  lastAccessed: string
+  accessCount: number
+}>>([])
 
 // Categories
 const categories = ref([
@@ -1148,8 +1086,8 @@ const extractDomain = (url: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1175,15 +1113,14 @@ const extractDomain = (url: string) => {
 }
 
 .delete-btn {
-  background: rgba(107, 114, 128, 0.1);
-  border: 1px solid rgba(107, 114, 128, 0.2);
-  color: #9ca3af;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
 }
 
 .delete-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
   transform: translateY(-1px);
 }
 

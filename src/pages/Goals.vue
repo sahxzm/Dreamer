@@ -9,69 +9,19 @@ const newGoalCategory = ref('personal')
 const newGoalDeadline = ref('')
 const newGoalPriority = ref('medium')
 
-// Mock goals data
-const goals = ref([
-  {
-    id: 1,
-    text: 'Learn Vue.js and TypeScript',
-    category: 'learning',
-    priority: 'high',
-    deadline: '2024-03-15',
-    progress: 65,
-    status: 'active',
-    type: 'mini',
-    createdAt: '2024-01-01',
-    completedAt: null
-  },
-  {
-    id: 2,
-    text: 'Complete 100 push-ups daily',
-    category: 'health',
-    priority: 'medium',
-    deadline: '2024-02-29',
-    progress: 30,
-    status: 'active',
-    type: 'mini',
-    createdAt: '2024-01-10',
-    completedAt: null
-  },
-  {
-    id: 3,
-    text: 'Read 12 books this year',
-    category: 'learning',
-    priority: 'low',
-    deadline: '2024-12-31',
-    progress: 25,
-    status: 'active',
-    type: 'longterm',
-    createdAt: '2024-01-01',
-    completedAt: null
-  },
-  {
-    id: 4,
-    text: 'Save $10,000 for emergency fund',
-    category: 'financial',
-    priority: 'high',
-    deadline: '2024-06-30',
-    progress: 40,
-    status: 'active',
-    type: 'longterm',
-    createdAt: '2024-01-01',
-    completedAt: null
-  },
-  {
-    id: 5,
-    text: 'Complete online course',
-    category: 'learning',
-    priority: 'medium',
-    deadline: '2024-01-20',
-    progress: 100,
-    status: 'completed',
-    type: 'mini',
-    createdAt: '2024-01-01',
-    completedAt: '2024-01-15'
-  }
-])
+// Goals data - will be loaded from real data source
+const goals = ref<Array<{
+  id: number
+  text: string
+  category: string
+  priority: string
+  deadline: string
+  progress: number
+  status: string
+  type: string
+  createdAt: string
+  completedAt: string | null
+}>>([])
 
 // Computed properties
 const miniGoals = computed(() => goals.value.filter(g => g.type === 'mini'))
@@ -103,7 +53,7 @@ const addGoal = () => {
     progress: 0,
     status: 'active',
     type: currentView.value,
-    createdAt: new Date().toISOString().split('T')[0],
+    createdAt: new Date().toISOString().split('T')[0] || '',
     completedAt: null
   }
   
@@ -118,7 +68,7 @@ const updateProgress = (goalId: number, progress: number) => {
     goal.progress = Math.max(0, Math.min(100, progress))
     if (goal.progress === 100 && goal.status === 'active') {
       goal.status = 'completed'
-      goal.completedAt = new Date().toISOString().split('T')[0]
+      goal.completedAt = new Date().toISOString().split('T')[0] || null
     }
   }
 }
@@ -188,7 +138,7 @@ const isOverdue = (deadline: string) => {
           Goals & Milestones
         </h1>
         <div class="header-actions">
-          <button class="action-btn primary">
+          <button @click="addGoal" class="action-btn primary">
             <Icon icon="lucide:plus" class="btn-icon" />
             Add Goal
           </button>

@@ -2,25 +2,22 @@
 import { ref, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 
-// Mock data - in real app, this would come from Supabase
+// User data - will be populated from auth store
 const user = ref({
-  name: 'Sahil Singh',
+  name: 'User',
   avatar: null
 })
 
+// Stats will be computed from real data
 const stats = ref({
-  tasksCompleted: 12,
-  focusHours: 8.5,
-  weeklyPoints: 245,
-  streak: 7
+  tasksCompleted: 0,
+  focusHours: 0,
+  weeklyPoints: 0,
+  streak: 0
 })
 
-const todayTasks = ref([
-  { id: 1, text: 'Complete project proposal', completed: false, priority: 'high' },
-  { id: 2, text: 'Review code changes', completed: true, priority: 'medium' },
-  { id: 3, text: 'Team standup meeting', completed: false, priority: 'high' },
-  { id: 4, text: 'Update documentation', completed: false, priority: 'low' }
-])
+// Today's tasks will be loaded from real data
+const todayTasks = ref<Array<{id: number, text: string, completed: boolean, priority: string}>>([])
 
 const motivationalQuotes = [
   "Character is the finest beauty. — Swami Sivananda",
@@ -45,8 +42,26 @@ const quickActions = [
 ]
 
 const handleQuickAction = (action: string) => {
-  console.log(`Quick action: ${action}`)
-  // In real app, this would navigate or open modals
+  switch (action) {
+    case 'addTask':
+      // Navigate to tasks page
+      window.location.href = '/tasks'
+      break
+    case 'startFocus':
+      // Navigate to focus page
+      window.location.href = '/focus'
+      break
+    case 'viewGoals':
+      // Navigate to goals page
+      window.location.href = '/goals'
+      break
+    case 'journal':
+      // Navigate to journal page
+      window.location.href = '/journal'
+      break
+    default:
+      console.log(`Quick action: ${action}`)
+  }
 }
 </script>
 
@@ -163,7 +178,7 @@ const handleQuickAction = (action: string) => {
       </div>
 
       <div class="task-actions">
-        <button class="btn-primary">
+        <button @click="handleQuickAction('addTask')" class="btn-primary">
           <Icon icon="lucide:plus" class="btn-icon" />
           Add Task
         </button>

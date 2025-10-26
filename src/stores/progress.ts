@@ -1,0 +1,393 @@
+import { defineStore } from 'pinia'
+import { ref, computed, watch } from 'vue'
+import { supabase } from '../api/supabase'
+import { useAuthStore } from './auth'
+import { useLocalStorage } from '../utils/storage'
+
+export interface ProgressItem {
+  id: string
+  user_id: string
+  type: 'task' | 'goal' | 'focus' | 'journal' | 'routine'
+  title: string
+  description?: string
+  status: 'pending' | 'in_progress' | 'completed'
+  priority: 'low' | 'medium' | 'high'
+  category: string
+  value: number
+  target_value?: number
+  date: string
+  created_at: string
+  updated_at: string
+  completed_at?: string
+}
+
+export interface ProgressStats {
+  total: number
+  completed: number
+  pending: number
+  in_progress: number
+  completionRate: number
+  todayCompleted: number
+  weekCompleted: number
+  monthCompleted: number
+}
+
+export const useProgressStore = defineStore('progress', () => {
+  // State with persistence
+  const progressItems = useLocalStorage<ProgressItem[]>('progress:items', [])
+  const loading = ref(false)
+  const lastSync = useLocalStorage<string>('progress:lastSync', '')
+
+  // Getters
+  const authStore = useAuthStore()
+
+  const today = computed(() => new Date().toISOString().split('T')[0])
+  const thisWeek = computed(() => {
+    const now = new Date()
+    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()))
+    return startOfWeek.toISOString().split('T')[0]
+  })
+  const thisMonth = computed(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  })
+
+  const todayItems = computed(() => 
+    progressItems.value.filter(item => item.date === today.value)
+  )
+
+  const completedToday = computed(() => 
+    todayItems.value.filter(item => item.status === 'completed')
+  )
+
+  const pendingToday = computed(() => 
+    todayItems.value.filter(item => item.status === 'pending')
+  )
+
+  const inProgressToday = computed(() => 
+    todayItems.value.filter(item => item.status === 'in_progress')
+  )
+
+  const progressStats = computed((): ProgressStats => {
+    const total = progressItems.value.length
+    const completed = progressItems.value.filter(item => item.status === 'completed').length
+    const pending = progressItems.value.filter(item => item.status === 'pending').length
+    const in_progress = progressItems.value.filter(item => item.status === 'in_progress').length
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
+
+    const todayCompleted = completedToday.value.length
+    const weekCompleted = progressItems.value.filter(item => 
+      item.status === 'completed' && item.date >= thisWeek.value
+    ).length
+    const monthCompleted = progressItems.value.filter(item => 
+      item.status === 'completed' && item.date >= thisMonth.value
+    ).length
+
+    return {
+      total,
+      completed,
+      pending,
+      in_progress,
+      completionRate,
+      todayCompleted,
+      weekCompleted,
+      monthCompleted
+    }
+  })
+
+  const itemsByType = computed(() => {
+    const types = {
+      task: [] as ProgressItem[],
+      goal: [] as ProgressItem[],
+      focus: [] as ProgressItem[],
+      journal: [] as ProgressItem[],
+      routine: [] as ProgressItem[]
+    }
+
+    progressItems.value.forEach(item => {
+      if (types[item.type]) {
+        types[item.type].push(item)
+      }
+    })
+
+    return types
+  })
+
+  const itemsByCategory = computed(() => {
+    const categories: Record<string, ProgressItem[]> = {}
+    
+    progressItems.value.forEach(item => {
+      if (!categories[item.category]) {
+        categories[item.category] = []
+      }
+      categories[item.category].push(item)
+    })
+
+    return categories
+  })
+
+  // Actions
+  const fetchProgress = async () => {
+    if (!authStore.isAuthenticated) {
+      // Load from local storage if not authenticated
+      const stored = localStorage.getItem('progress:items')
+      if (stored) {
+        try {
+          progressItems.value = JSON.parse(stored)
+        } catch (error) {
+          console.error('Error parsing stored progress:', error)
+        }
+      }
+      return
+    }
+
+    loading.value = true
+    try {
+      const { data, error } = await supabase
+        .from('progress_items')
+        .select('*')
+        .eq('user_id', authStore.user?.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      
+      progressItems.value = data || []
+      lastSync.value = new Date().toISOString()
+    } catch (error) {
+      console.error('Error fetching progress:', error)
+      // Fallback to local storage
+      const stored = localStorage.getItem('progress:items')
+      if (stored) {
+        try {
+          progressItems.value = JSON.parse(stored)
+        } catch (parseError) {
+          console.error('Error parsing stored progress:', parseError)
+        }
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const createProgressItem = async (itemData: Omit<ProgressItem, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!authStore.isAuthenticated) {
+      // Create locally if not authenticated
+      const newItem: ProgressItem = {
+        ...itemData,
+        id: `local_${Date.now()}`,
+        user_id: 'local',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+      progressItems.value.unshift(newItem)
+      return { data: newItem, error: null }
+    }
+
+    loading.value = true
+    try {
+      const { data, error } = await supabase
+        .from('progress_items')
+        .insert({
+          ...itemData,
+          user_id: authStore.user?.id
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+      
+      progressItems.value.unshift(data)
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error creating progress item:', error)
+      return { data: null, error }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const updateProgressItem = async (itemId: string, updates: Partial<ProgressItem>) => {
+    if (!authStore.isAuthenticated) {
+      // Update locally if not authenticated
+      const index = progressItems.value.findIndex(item => item.id === itemId)
+      if (index !== -1) {
+        progressItems.value[index] = {
+          ...progressItems.value[index],
+          ...updates,
+          updated_at: new Date().toISOString()
+        }
+      }
+      return { data: progressItems.value[index], error: null }
+    }
+
+    loading.value = true
+    try {
+      const { data, error } = await supabase
+        .from('progress_items')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', itemId)
+        .eq('user_id', authStore.user?.id)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      const index = progressItems.value.findIndex(item => item.id === itemId)
+      if (index !== -1) {
+        progressItems.value[index] = data
+      }
+
+      return { data, error: null }
+    } catch (error) {
+      console.error('Error updating progress item:', error)
+      return { data: null, error }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const completeProgressItem = async (itemId: string) => {
+    return await updateProgressItem(itemId, {
+      status: 'completed',
+      completed_at: new Date().toISOString()
+    })
+  }
+
+  const deleteProgressItem = async (itemId: string) => {
+    if (!authStore.isAuthenticated) {
+      // Delete locally if not authenticated
+      progressItems.value = progressItems.value.filter(item => item.id !== itemId)
+      return { data: null, error: null }
+    }
+
+    loading.value = true
+    try {
+      const { error } = await supabase
+        .from('progress_items')
+        .delete()
+        .eq('id', itemId)
+        .eq('user_id', authStore.user?.id)
+
+      if (error) throw error
+
+      progressItems.value = progressItems.value.filter(item => item.id !== itemId)
+      return { data: null, error: null }
+    } catch (error) {
+      console.error('Error deleting progress item:', error)
+      return { data: null, error }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Real-time sync functions
+  const syncWithTasks = (tasks: any[]) => {
+    const today = new Date().toISOString().split('T')[0]
+    
+    tasks.forEach(task => {
+      const existingItem = progressItems.value.find(item => 
+        item.type === 'task' && 
+        item.title === task.text && 
+        item.date === task.dueDate
+      )
+
+      if (!existingItem && task.dueDate === today) {
+        // Create new progress item for today's tasks
+        createProgressItem({
+          type: 'task',
+          title: task.text,
+          description: `Task: ${task.text}`,
+          status: task.completed ? 'completed' : 'pending',
+          priority: task.priority,
+          category: task.category || 'general',
+          value: task.completed ? 1 : 0,
+          date: task.dueDate,
+          completed_at: task.completed ? new Date().toISOString() : undefined
+        })
+      } else if (existingItem && existingItem.status !== (task.completed ? 'completed' : 'pending')) {
+        // Update existing item status
+        updateProgressItem(existingItem.id, {
+          status: task.completed ? 'completed' : 'pending',
+          completed_at: task.completed ? new Date().toISOString() : undefined
+        })
+      }
+    })
+  }
+
+  const syncWithGoals = (goals: any[]) => {
+    goals.forEach(goal => {
+      const existingItem = progressItems.value.find(item => 
+        item.type === 'goal' && 
+        item.title === goal.title
+      )
+
+      if (!existingItem) {
+        // Create new progress item for goal
+        createProgressItem({
+          type: 'goal',
+          title: goal.title,
+          description: goal.description,
+          status: goal.status === 'completed' ? 'completed' : 'active',
+          priority: goal.priority,
+          category: goal.category,
+          value: goal.current_value,
+          target_value: goal.target_value,
+          date: new Date().toISOString().split('T')[0],
+          completed_at: goal.completed_at
+        })
+      } else if (existingItem.value !== goal.current_value || existingItem.status !== goal.status) {
+        // Update existing goal progress
+        updateProgressItem(existingItem.id, {
+          value: goal.current_value,
+          status: goal.status === 'completed' ? 'completed' : 'active',
+          completed_at: goal.completed_at
+        })
+      }
+    })
+  }
+
+  // Auto-sync when data changes
+  const startAutoSync = () => {
+    // Sync every 30 seconds
+    const syncInterval = setInterval(async () => {
+      if (authStore.isAuthenticated) {
+        await fetchProgress()
+      }
+    }, 30000)
+
+    // Cleanup on unmount
+    return () => clearInterval(syncInterval)
+  }
+
+  return {
+    // State
+    progressItems,
+    loading,
+    lastSync,
+
+    // Getters
+    today,
+    thisWeek,
+    thisMonth,
+    todayItems,
+    completedToday,
+    pendingToday,
+    inProgressToday,
+    progressStats,
+    itemsByType,
+    itemsByCategory,
+
+    // Actions
+    fetchProgress,
+    createProgressItem,
+    updateProgressItem,
+    completeProgressItem,
+    deleteProgressItem,
+    syncWithTasks,
+    syncWithGoals,
+    startAutoSync
+  }
+})

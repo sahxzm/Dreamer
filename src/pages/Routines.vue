@@ -1,76 +1,25 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useLocalStorage } from '../utils/storage'
 
 // Routine state
-const showHeatmap = ref(false)
 const newRoutineName = ref('')
 const newRoutineCategory = ref('health')
 const newRoutineFrequency = ref('daily')
 
-// Mock routines data
-const routines = ref([
-  { 
-    id: 1, 
-    name: 'Morning Workout', 
-    category: 'health', 
-    frequency: 'daily',
-    streak: 7,
-    totalCompletions: 45,
-    lastCompleted: '2024-01-15',
-    isActive: true
-  },
-  { 
-    id: 2, 
-    name: 'Read 30 minutes', 
-    category: 'learning', 
-    frequency: 'daily',
-    streak: 12,
-    totalCompletions: 78,
-    lastCompleted: '2024-01-15',
-    isActive: true
-  },
-  { 
-    id: 3, 
-    name: 'Meditation', 
-    category: 'mindfulness', 
-    frequency: 'daily',
-    streak: 3,
-    totalCompletions: 15,
-    lastCompleted: '2024-01-14',
-    isActive: true
-  },
-  { 
-    id: 4, 
-    name: 'Code Practice', 
-    category: 'learning', 
-    frequency: 'daily',
-    streak: 0,
-    totalCompletions: 23,
-    lastCompleted: '2024-01-10',
-    isActive: false
-  }
-])
+// Routines data with local storage persistence
+const routines = useLocalStorage<Array<{
+  id: number
+  name: string
+  category: string
+  frequency: string
+  streak: number
+  totalCompletions: number
+  lastCompleted: string | null
+  isActive: boolean
+}>>('routines', [])
 
-// Mock activity data for heatmap (last 30 days)
-const activityData = ref(() => {
-  const data = []
-  const today = new Date()
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i)
-    const dateStr = date.toISOString().split('T')[0]
-    
-    // Generate random activity levels (0-4)
-    const level = Math.floor(Math.random() * 5)
-    data.push({
-      date: dateStr,
-      level: level,
-      completions: level > 0 ? Math.floor(Math.random() * 3) + 1 : 0
-    })
-  }
-  return data
-})
 
 // Computed properties
 const activeRoutines = computed(() => routines.value.filter(r => r.isActive))
@@ -82,8 +31,8 @@ const todayCompletions = computed(() => {
 const weeklyCompletions = computed(() => {
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
-  const weekAgoStr = weekAgo.toISOString().split('T')[0]
-  return routines.value.filter(r => r.lastCompleted >= weekAgoStr).length
+  const weekAgoStr = weekAgo.toISOString().split('T')[0] || ''
+  return routines.value.filter(r => r.lastCompleted && r.lastCompleted >= weekAgoStr).length
 })
 const currentStreak = computed(() => {
   return Math.max(...routines.value.map(r => r.streak))
@@ -104,32 +53,36 @@ const addRoutine = () => {
     isActive: true
   }
   
-  routines.value.push(newRoutine)
+  routines.value = [...routines.value, newRoutine]
   newRoutineName.value = ''
 }
 
 const toggleRoutine = (routineId: number) => {
-  const routine = routines.value.find(r => r.id === routineId)
-  if (routine) {
-    routine.isActive = !routine.isActive
-  }
+  routines.value = routines.value.map(routine => 
+    routine.id === routineId 
+      ? { ...routine, isActive: !routine.isActive }
+      : routine
+  )
 }
 
 const completeRoutine = (routineId: number) => {
-  const routine = routines.value.find(r => r.id === routineId)
-  if (routine) {
-    const today = new Date().toISOString().split('T')[0]
-    routine.lastCompleted = today
-    routine.streak += 1
-    routine.totalCompletions += 1
-  }
+  const today = new Date().toISOString().split('T')[0] || ''
+  routines.value = routines.value.map(routine => {
+    if (routine.id === routineId) {
+      const isAlreadyCompletedToday = routine.lastCompleted === today
+      return {
+        ...routine,
+        lastCompleted: today,
+        streak: isAlreadyCompletedToday ? routine.streak : routine.streak + 1,
+        totalCompletions: routine.totalCompletions + 1
+      }
+    }
+    return routine
+  })
 }
 
 const deleteRoutine = (routineId: number) => {
-  const index = routines.value.findIndex(r => r.id === routineId)
-  if (index > -1) {
-    routines.value.splice(index, 1)
-  }
+  routines.value = routines.value.filter(r => r.id !== routineId)
 }
 
 const getCategoryIcon = (category: string) => {
@@ -154,16 +107,6 @@ const getCategoryColor = (category: string) => {
   }
 }
 
-const getHeatmapColor = (level: number) => {
-  switch (level) {
-    case 0: return 'bg-gray-800'
-    case 1: return 'bg-green-900'
-    case 2: return 'bg-green-700'
-    case 3: return 'bg-green-500'
-    case 4: return 'bg-green-300'
-    default: return 'bg-gray-800'
-  }
-}
 </script>
 
 <template>
@@ -176,14 +119,7 @@ const getHeatmapColor = (level: number) => {
           Routine Tracker
         </h1>
         <div class="header-actions">
-          <button 
-            @click="showHeatmap = !showHeatmap"
-            class="action-btn"
-          >
-            <Icon icon="lucide:grid-3x3" class="btn-icon" />
-            {{ showHeatmap ? 'Hide' : 'Show' }} Heatmap
-          </button>
-          <button class="action-btn primary">
+          <button @click="addRoutine" class="action-btn primary">
             <Icon icon="lucide:plus" class="btn-icon" />
             Add Routine
           </button>
@@ -234,31 +170,6 @@ const getHeatmapColor = (level: number) => {
       </div>
     </div>
 
-    <!-- Heatmap -->
-    <div v-if="showHeatmap" class="heatmap-section">
-      <h2 class="section-title">Activity Heatmap</h2>
-      <div class="heatmap-container">
-        <div class="heatmap-grid">
-          <div 
-            v-for="day in activityData" 
-            :key="day.date"
-            :class="['heatmap-day', getHeatmapColor(day.level)]"
-            :title="`${day.date}: ${day.completions} completions`"
-          ></div>
-        </div>
-        <div class="heatmap-legend">
-          <span class="legend-label">Less</span>
-          <div class="legend-colors">
-            <div class="legend-color bg-gray-800"></div>
-            <div class="legend-color bg-green-900"></div>
-            <div class="legend-color bg-green-700"></div>
-            <div class="legend-color bg-green-500"></div>
-            <div class="legend-color bg-green-300"></div>
-          </div>
-          <span class="legend-label">More</span>
-        </div>
-      </div>
-    </div>
 
     <!-- Add Routine Form -->
     <div class="add-routine">
@@ -514,15 +425,6 @@ const getHeatmapColor = (level: number) => {
   font-weight: 500;
 }
 
-/* Heatmap Section */
-.heatmap-section {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: 16px;
-  padding: 24px;
-  backdrop-filter: blur(20px);
-}
-
 .section-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -536,58 +438,6 @@ const getHeatmapColor = (level: number) => {
 .section-icon {
   font-size: 20px;
   color: #8b5cf6;
-}
-
-.heatmap-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.heatmap-grid {
-  display: grid;
-  grid-template-columns: repeat(30, 1fr);
-  gap: 2px;
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.heatmap-day {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.heatmap-day:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
-}
-
-.heatmap-legend {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 8px;
-}
-
-.legend-label {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-.legend-colors {
-  display: flex;
-  gap: 2px;
-}
-
-.legend-color {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
 }
 
 /* Add Routine Form */
@@ -829,9 +679,17 @@ const getHeatmapColor = (level: number) => {
 }
 
 .delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
   color: #fca5a5;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .delete-btn:hover {

@@ -1,14 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '../api/supabase'
-import type { User, Session } from '@supabase/supabase-js'
+import { useLocalStorage } from '../utils/storage'
+import type { User } from '@supabase/supabase-js'
 
 export const useAuthStore = defineStore('auth', () => {
-  // State
-  const user = ref<User | null>(null)
-  const session = ref<Session | null>(null)
+  // State with persistence
+  const user = useLocalStorage<User | null>('auth:user', null)
+  const session = useLocalStorage<any>('auth:session', null)
   const loading = ref(false)
-  const initialized = ref(false)
+  const error = ref<string | null>(null)
+  const initialized = useLocalStorage<boolean>('auth:initialized', false)
 
   // Getters
   const isAuthenticated = computed(() => !!user.value)
@@ -44,6 +46,8 @@ export const useAuthStore = defineStore('auth', () => {
       initialized.value = true
     } catch (error) {
       console.error('Error initializing auth:', error)
+      // Don't fail the entire app if auth fails
+      initialized.value = true
     } finally {
       loading.value = false
     }
@@ -163,22 +167,35 @@ export const useAuthStore = defineStore('auth', () => {
   // Auto-login from localStorage
   const restoreSession = async () => {
     try {
-      const storedSession = localStorage.getItem('dreamer_session')
-      if (storedSession) {
-        const sessionData = JSON.parse(storedSession)
-        const { data: { session: currentSession } } = await supabase.auth.getSession()
-        
-        if (currentSession && currentSession.access_token === sessionData.access_token) {
-          session.value = currentSession
-          user.value = currentSession.user
-        } else {
-          // Session expired, clear localStorage
-          localStorage.removeItem('dreamer_session')
-        }
+      // Skip if already initialized
+      if (initialized.value) {
+        return { session: session.value, user: user.value }
       }
-    } catch (error) {
-      console.error('Error restoring session:', error)
-      localStorage.removeItem('dreamer_session')
+
+      loading.value = true
+      const { data, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError) throw sessionError
+      
+      if (data?.session) {
+        session.value = data.session
+        user.value = data.session.user as User
+      } else {
+        session.value = null
+        user.value = null
+      }
+      
+      initialized.value = true
+      return { session: data.session, user: data.session?.user || null }
+    } catch (err) {
+      console.error('Error restoring session:', err)
+      error.value = err instanceof Error ? err.message : 'Failed to restore session'
+      session.value = null
+      user.value = null
+      initialized.value = true
+      return { session: null, user: null }
+    } finally {
+      loading.value = false
     }
   }
 
@@ -187,6 +204,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     session,
     loading,
+    error,
     initialized,
     
     // Getters
