@@ -1,7 +1,8 @@
 {
-  "name": "dreamer-tracker",
+  "name": "dreamer-productivity-platform",
   "private": true,
   "version": "0.0.0",
+  "description": "A comprehensive productivity and habit tracking application built with Vue.js 3, TypeScript, and Supabase",
   "type": "module",
   "scripts": {
     "dev": "vite",
