@@ -19,14 +19,24 @@ const tasks = useLocalStorage<Array<{
   category: string
 }>>('tasks', [])
 
+// Function to get the correct current date in local timezone
+const getCurrentDate = () => {
+  const now = new Date()
+  // Use local timezone instead of UTC
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // Computed properties
 const todayTasks = computed(() => {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getCurrentDate()
   return tasks.value.filter(task => task.dueDate === today)
 })
 
 const backlogTasks = computed(() => {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getCurrentDate()
   return tasks.value.filter(task => task.dueDate !== today)
 })
 
@@ -61,7 +71,7 @@ const toggleTask = (taskId: number) => {
 const addTask = () => {
   if (!newTaskText.value.trim()) return
   
-  const today = new Date().toISOString().split('T')[0] || ''
+  const today = getCurrentDate()
   
   const newTask = {
     id: Date.now(),
@@ -75,14 +85,16 @@ const addTask = () => {
   tasks.value = [...tasks.value, newTask]
   newTaskText.value = ''
   newTaskPriority.value = 'medium'
+  console.log('Task created for today:', today, newTask)
 }
 
 const moveAllToToday = () => {
-  const today = new Date().toISOString().split('T')[0] || ''
+  const today = getCurrentDate()
   tasks.value = tasks.value.map(task => ({
     ...task,
     dueDate: today
   }))
+  console.log('All tasks moved to today:', today)
 }
 
 const deleteTask = (taskId: number) => {

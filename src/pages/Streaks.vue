@@ -261,36 +261,56 @@ const toggleTask = async (taskId: number) => {
   updateTodayCompletion()
 }
 
-// Function to add a new task for today
-const addTaskForToday = (text: string, priority: 'high' | 'medium' | 'low' = 'medium') => {
-  const today = getCurrentDate()
-  
-  const newTask = {
-    id: Date.now() + Math.random(),
-    text,
-    completed: false,
-    priority,
-    dueDate: today,
-    category: 'general'
+// Task editing state
+const editingTask = ref<number | null>(null)
+const editTaskDate = ref('')
+const editTaskText = ref('')
+const editTaskPriority = ref<'high' | 'medium' | 'low'>('medium')
+
+// Function to start editing a task
+const startEditTask = (taskId: number) => {
+  const task = localTasks.value.find(t => t.id === taskId)
+  if (task) {
+    editingTask.value = taskId
+    editTaskDate.value = task.dueDate
+    editTaskText.value = task.text
+    editTaskPriority.value = task.priority
   }
-  
-  localTasks.value.push(newTask)
-  updateTodayCompletion()
-  console.log('Added task for today:', today, newTask)
 }
 
-// Function to sync all tasks with current system date
-const syncTasksWithCurrentDate = () => {
-  const today = getCurrentDate()
+// Function to cancel editing
+const cancelEditTask = () => {
+  editingTask.value = null
+  editTaskDate.value = ''
+  editTaskText.value = ''
+  editTaskPriority.value = 'medium'
+}
+
+// Function to save edited task
+const saveEditTask = () => {
+  if (!editingTask.value) return
   
-  // Update all tasks to today's date
-  localTasks.value = localTasks.value.map(task => ({
-    ...task,
-    dueDate: today
-  }))
+  localTasks.value = localTasks.value.map(task => 
+    task.id === editingTask.value 
+      ? { 
+          ...task, 
+          dueDate: editTaskDate.value,
+          text: editTaskText.value,
+          priority: editTaskPriority.value
+        }
+      : task
+  )
   
   updateTodayCompletion()
-  console.log('Synced all tasks with current date:', today)
+  cancelEditTask()
+  console.log('Task updated:', editingTask.value)
+}
+
+// Function to delete a task
+const deleteTask = (taskId: number) => {
+  localTasks.value = localTasks.value.filter(task => task.id !== taskId)
+  updateTodayCompletion()
+  console.log('Task deleted:', taskId)
 }
 
 // Removed manual add/remove controls
@@ -424,40 +444,6 @@ watch(() => goalsStore.goals, async () => {
 
 // Removed journal sync - handled separately in Journal page
 
-// Test function to add some sample data
-const addTestData = () => {
-  const today = new Date()
-  
-  // Add some tasks for the last few days, all synced with current system date
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i)
-    
-    // Use local timezone for date string
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const dateStr = `${year}-${month}-${day}`
-    
-    // Add 1-3 tasks per day
-    const taskCount = Math.floor(Math.random() * 3) + 1
-    for (let j = 0; j < taskCount; j++) {
-      const task = {
-        id: Date.now() + Math.random(),
-        text: `Task ${j + 1} for ${dateStr}`,
-        completed: Math.random() > 0.3, // 70% completion rate
-        priority: 'medium' as const,
-        dueDate: dateStr,
-        category: 'test'
-      }
-      localTasks.value.push(task)
-    }
-  }
-  
-  console.log('Added test data:', localTasks.value.length, 'tasks')
-  updateTodayCompletion()
-}
-
 // Debug function to show current date info
 const showDateInfo = () => {
   const currentDate = getCurrentDate()
@@ -475,7 +461,7 @@ const showDateInfo = () => {
 }
 
 // Expose debug functions
-defineExpose({ addTestData, showDateInfo })
+defineExpose({ showDateInfo })
 </script>
 
 <template>
@@ -506,14 +492,6 @@ defineExpose({ addTestData, showDateInfo })
           </p>
         </div>
         <div class="header-actions">
-          <button @click="addTestData" class="action-btn debug">
-            <Icon icon="lucide:plus" class="btn-icon" />
-            Add Test Data
-          </button>
-          <button @click="syncTasksWithCurrentDate" class="action-btn debug">
-            <Icon icon="lucide:refresh-cw" class="btn-icon" />
-            Sync with Today
-          </button>
           <button @click="showDateInfo" class="action-btn debug">
             <Icon icon="lucide:calendar" class="btn-icon" />
             Show Date Info
@@ -588,17 +566,64 @@ defineExpose({ addTestData, showDateInfo })
               :key="task.id"
               class="progress-item"
             >
-              <div class="item-info">
+              <!-- Edit Mode -->
+              <div v-if="editingTask === task.id" class="edit-mode">
+                <div class="edit-form">
+                  <input 
+                    v-model="editTaskText" 
+                    class="edit-input"
+                    placeholder="Task text"
+                  />
+                  <input 
+                    v-model="editTaskDate" 
+                    type="date"
+                    class="edit-date"
+                  />
+                  <select v-model="editTaskPriority" class="edit-priority">
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+                <div class="edit-actions">
+                  <button @click="saveEditTask" class="save-btn">
+                    <Icon icon="lucide:check" />
+                  </button>
+                  <button @click="cancelEditTask" class="cancel-btn">
+                    <Icon icon="lucide:x" />
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Normal Mode -->
+              <div v-else class="item-info">
                 <span class="item-title">{{ task.text }}</span>
+                <span class="item-date">{{ task.dueDate }}</span>
                 <span class="item-priority" :class="`priority-${task.priority}`">{{ task.priority }}</span>
               </div>
-              <button 
-                class="complete-btn"
-                @click="toggleTask(task.id)"
-                title="Mark as complete"
-              >
-                <Icon icon="lucide:check" />
-              </button>
+              <div class="item-actions">
+                <button 
+                  class="edit-btn"
+                  @click="startEditTask(task.id)"
+                  title="Edit task"
+                >
+                  <Icon icon="lucide:edit" />
+                </button>
+                <button 
+                  class="delete-btn"
+                  @click="deleteTask(task.id)"
+                  title="Delete task"
+                >
+                  <Icon icon="lucide:trash-2" />
+                </button>
+                <button 
+                  class="complete-btn"
+                  @click="toggleTask(task.id)"
+                  title="Mark as complete"
+                >
+                  <Icon icon="lucide:check" />
+                </button>
+              </div>
             </div>
             <div v-if="todayTasks.filter(task => !task.completed).length === 0" class="empty-state">
               <Icon icon="lucide:check-circle" />
@@ -620,11 +645,58 @@ defineExpose({ addTestData, showDateInfo })
               :key="task.id"
               class="progress-item completed"
             >
-              <div class="item-info">
+              <!-- Edit Mode -->
+              <div v-if="editingTask === task.id" class="edit-mode">
+                <div class="edit-form">
+                  <input 
+                    v-model="editTaskText" 
+                    class="edit-input"
+                    placeholder="Task text"
+                  />
+                  <input 
+                    v-model="editTaskDate" 
+                    type="date"
+                    class="edit-date"
+                  />
+                  <select v-model="editTaskPriority" class="edit-priority">
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+                <div class="edit-actions">
+                  <button @click="saveEditTask" class="save-btn">
+                    <Icon icon="lucide:check" />
+                  </button>
+                  <button @click="cancelEditTask" class="cancel-btn">
+                    <Icon icon="lucide:x" />
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Normal Mode -->
+              <div v-else class="item-info">
                 <span class="item-title">{{ task.text }}</span>
+                <span class="item-date">{{ task.dueDate }}</span>
                 <span class="item-priority" :class="`priority-${task.priority}`">{{ task.priority }}</span>
               </div>
-              <Icon icon="lucide:check-circle" class="completed-icon" />
+              <div class="item-actions">
+                <button 
+                  class="edit-btn"
+                  @click="startEditTask(task.id)"
+                  title="Edit task"
+                >
+                  <Icon icon="lucide:edit" />
+                </button>
+                <button 
+                  class="delete-btn"
+                  @click="deleteTask(task.id)"
+                  title="Delete task"
+                >
+                  <Icon icon="lucide:trash-2" />
+                </button>
+                <Icon icon="lucide:check-circle" class="completed-icon" />
+              </div>
             </div>
             <div v-if="todayTasks.filter(task => task.completed).length === 0" class="empty-state">
               <Icon icon="lucide:clock" />
@@ -2136,5 +2208,133 @@ defineExpose({ addTestData, showDateInfo })
 .heatmap-medium { background: #006d32; border-color: rgba(34, 197, 94, 0.45); }
 .heatmap-high { background: #26a641; border-color: rgba(34, 197, 94, 0.65); }
 .heatmap-max { background: #39d353; border-color: rgba(34, 197, 94, 0.85); box-shadow: 0 0 2px rgba(34, 197, 94, 0.3); }
+
+/* Edit Mode Styles */
+.edit-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-input {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+}
+
+.edit-date {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+}
+
+.edit-priority {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.save-btn, .cancel-btn {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.save-btn {
+  background: #10b981;
+  color: white;
+}
+
+.save-btn:hover {
+  background: #059669;
+}
+
+.cancel-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background: #dc2626;
+}
+
+/* Item Actions */
+.item-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.edit-btn, .delete-btn {
+  padding: 4px 6px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.edit-btn:hover, .delete-btn:hover {
+  opacity: 1;
+}
+
+.edit-btn {
+  background: #3b82f6;
+  color: white;
+}
+
+.edit-btn:hover {
+  background: #2563eb;
+}
+
+.delete-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #dc2626;
+}
+
+/* Item Info Updates */
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.item-date {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
 </style>
 
