@@ -25,46 +25,41 @@ const localTasks = useLocalStorage<Array<{
 // Historical completion data by date
 const dailyCompletions = useLocalStorage<Record<string, number>>('daily_completions', {})
 
+// Function to get the correct current date in local timezone
+const getCurrentDate = () => {
+  const now = new Date()
+  // Use local timezone instead of UTC
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // Function to update today's completion count
 const updateTodayCompletion = () => {
-  const today = new Date().toISOString().split('T')[0]
-  if (!today) return
+  const today = getCurrentDate()
   const todayTasksList = localTasks.value.filter(task => task.dueDate === today)
   const completedTasksCount = todayTasksList.filter(task => task.completed).length
   dailyCompletions.value = { ...dailyCompletions.value, [today]: completedTasksCount }
 }
 
-// Activity tracking for today - computed from real data or local storage
+// Activity tracking for today - only tasks
 const todayActivity = computed(() => {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getCurrentDate()
   
-  // Always use local tasks for today's completed tasks count
+  // Only use local tasks for today's completed tasks count
   const todayTasksList = localTasks.value.filter(task => task.dueDate === today)
   const completedTasks = todayTasksList.filter(task => task.completed).length
   
-  // For unauthenticated users, only return tasks
-  if (!authStore.isAuthenticated) {
-    return {
-      tasks: completedTasks,
-      goals: 0,
-      pomodoros: 0,
-      notes: 0
-    }
+  return {
+    tasks: completedTasks,
+    goals: 0,
+    pomodoros: 0,
+    notes: 0
   }
-  
-  // For authenticated users, combine local tasks with progress store
-  const completedToday = progressStore.completedToday
-  
-  // Count by type (tasks come from localTasks, others from progress store)
-  const tasks = completedTasks
-  const goals = completedToday.filter(item => item.type === 'goal').length
-  const pomodoros = completedToday.filter(item => item.type === 'focus').length
-  const notes = completedToday.filter(item => item.type === 'journal').length
-  
-  return { tasks, goals, pomodoros, notes }
 })
 
-// Activity data for heatmap - computed from real data or local storage
+// Activity data for heatmap - only tasks
 const activityData = computed(() => {
   const data: Array<{date: string, level: number, completions: number, tasks: number, goals: number, pomodoros: number, notes: number}> = []
   const today = new Date()
@@ -74,7 +69,12 @@ const activityData = computed(() => {
   for (let i = 0; i < 365; i++) {
     const date = new Date(today)
     date.setDate(date.getDate() - i)
-    const dateStr = date.toISOString().split('T')[0] || ''
+    
+    // Use local timezone for date string
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
     
     // Initialize with default values
     let tasks = 0
@@ -85,57 +85,23 @@ const activityData = computed(() => {
     // Get local task completions for this date
     const dayTasks = localTasks.value.filter(task => {
       if (!task.dueDate) return false
-      const taskDate = new Date(task.dueDate)
-      taskDate.setHours(0, 0, 0, 0)
-      return taskDate.getTime() === date.getTime() && task.completed
+      return task.dueDate === dateStr && task.completed
     })
     
     tasks = dayTasks.length
     
-    if (authStore.isAuthenticated) {
-      // Get completed items from progress store
-      const dayItems = progressStore.progressItems.filter(item => {
-        if (!item.date) return false
-        const itemDate = new Date(item.date)
-        itemDate.setHours(0, 0, 0, 0)
-        return itemDate.getTime() === date.getTime() && item.status === 'completed'
-      })
-      
-      // Count different types of activities
-      goals = dayItems.filter(item => item.type === 'goal').length
-      pomodoros = dayItems.filter(item => item.type === 'focus').length
-      notes = dayItems.filter(item => item.type === 'journal').length
-      
-      // Get task completions from streaks store
-      const streakData = streaksStore.streaks.filter(streak => {
-        if (!streak.date) return false
-        const streakDate = new Date(streak.date)
-        streakDate.setHours(0, 0, 0, 0)
-        return streakDate.getTime() === date.getTime() && streak.activity_type === 'tasks'
-      })
-      
-      // Sum up streak values
-      const streakCompletions = streakData.reduce((sum, streak) => sum + (streak.value || 0), 0)
-      
-      // Use the maximum value between local tasks and streak data
-      tasks = Math.max(tasks, streakCompletions)
-    }
-    
-    // For today, update the completion count in storage
-    if (dateStr === today.toISOString().split('T')[0]) {
-      dailyCompletions.value = {
-        ...dailyCompletions.value,
-        [dateStr]: tasks
-      }
-    } else {
-      // For past days, use saved completion count if available
-      tasks = dailyCompletions.value[dateStr] !== undefined ? dailyCompletions.value[dateStr] : tasks
-    }
-    
     // Calculate level based on task completions (0-4 scale)
     let level = 0
     if (tasks > 0) {
-      level = Math.min(4, Math.max(1, Math.ceil(tasks / 2)))
+      if (tasks === 1) level = 1
+      else if (tasks <= 3) level = 2
+      else if (tasks <= 6) level = 3
+      else level = 4
+    }
+    
+    // Debug logging for a few recent days
+    if (i < 7) {
+      console.log(`Day ${i} (${dateStr}): tasks=${tasks}, level=${level}`)
     }
     
     // Add to data array in chronological order
@@ -196,30 +162,23 @@ const heatmapWeeks = computed(() => {
     if (weeks.length > 60) break
   }
 
-  // Build quantile thresholds from completions distribution
+  // Debug: Log completion values to see what's happening
   const values = Array.from(completionMap.values()).sort((a, b) => a - b)
-  const quantile = (p: number): number => {
-    if (values.length === 0) return 0
-    const idx = Math.floor((values.length - 1) * p)
-    const v = values[idx]
-    return typeof v === 'number' && isFinite(v) ? v : 0
-  }
-  const q1: number = quantile(0.25)
-  const q2: number = quantile(0.5)
-  const q3: number = quantile(0.75)
-  const max: number = values.length ? Number(values[values.length - 1]) : 0
+  console.log('Completion values:', values.slice(0, 10), '... total:', values.length)
+  console.log('Non-zero values:', values.filter(v => v > 0))
 
   const levelMap = new Map<string, number>()
   completionMap.forEach((comp, iso) => {
     const c = typeof comp === 'number' ? comp : 0
+    
+    // Use absolute thresholds for consistent level mapping
     let level = 0
-    if (c <= 0) level = 0
-    else if (c <= q1) level = 1
-    else if (c <= q2) level = 2
-    else if (c <= q3) level = 3
+    if (c === 0) level = 0
+    else if (c === 1) level = 1
+    else if (c <= 3) level = 2
+    else if (c <= 6) level = 3
     else level = 4
-    // If all values are the same non-zero, put them at mid-level for visibility
-    if (max > 0 && q1 === q2 && q2 === q3) level = 3
+    
     levelMap.set(iso, level)
   })
 
@@ -275,31 +234,9 @@ const monthGroups = computed(() => {
   return groups
 })
 
-// Selected activity used for stats display
-const selectedActivity = ref<'tasks' | 'focus' | 'journal' | 'routines'>('tasks')
-
-// Activity stats computed from real data
-const currentStats = computed(() => {
-  const defaultStats = {
-    current: 0,
-    longest: 0,
-    total: 0,
-    last_activity: null
-  }
-  
-  try {
-    // Get the latest streak data from the store
-    const stats = streaksStore.getStreakStats[selectedActivity.value] || defaultStats
-    return stats
-  } catch (error) {
-    console.error('Error calculating stats:', error)
-    return defaultStats
-  }
-})
-
 // Local data computed properties
 const todayTasks = computed(() => {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getCurrentDate()
   return localTasks.value.filter(task => task.dueDate === today)
 })
 
@@ -322,10 +259,38 @@ const toggleTask = async (taskId: number) => {
   )
   // Update today's completion count
   updateTodayCompletion()
-  // Immediately sync with progress store
-  if (authStore.isAuthenticated) {
-    await progressStore.syncWithTasks(localTasks.value)
+}
+
+// Function to add a new task for today
+const addTaskForToday = (text: string, priority: 'high' | 'medium' | 'low' = 'medium') => {
+  const today = getCurrentDate()
+  
+  const newTask = {
+    id: Date.now() + Math.random(),
+    text,
+    completed: false,
+    priority,
+    dueDate: today,
+    category: 'general'
   }
+  
+  localTasks.value.push(newTask)
+  updateTodayCompletion()
+  console.log('Added task for today:', today, newTask)
+}
+
+// Function to sync all tasks with current system date
+const syncTasksWithCurrentDate = () => {
+  const today = getCurrentDate()
+  
+  // Update all tasks to today's date
+  localTasks.value = localTasks.value.map(task => ({
+    ...task,
+    dueDate: today
+  }))
+  
+  updateTodayCompletion()
+  console.log('Synced all tasks with current date:', today)
 }
 
 // Removed manual add/remove controls
@@ -339,6 +304,31 @@ const toggleTask = async (taskId: number) => {
 // Helper functions
 const getActiveDays = () => {
   return activityData.value.filter(day => day.level > 0).length
+}
+
+const getTotalCompletions = () => {
+  return activityData.value.reduce((sum, day) => sum + day.completions, 0)
+}
+
+const getCurrentStreak = () => {
+  let streak = 0
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  for (let i = 0; i < 365; i++) {
+    const date = new Date(today)
+    date.setDate(date.getDate() - i)
+    const dateStr = date.toISOString().split('T')[0]
+    
+    const dayData = activityData.value.find(d => d.date === dateStr)
+    if (dayData && dayData.completions > 0) {
+      streak++
+    } else {
+      break
+    }
+  }
+  
+  return streak
 }
 
 // Load real data from all stores
@@ -377,6 +367,12 @@ let syncInterval: NodeJS.Timeout | null = null
 onMounted(async () => {
   // Initialize auth first
   await authStore.initializeAuth()
+  
+  // Debug: Check what data we have
+  console.log('localTasks:', localTasks.value.length, 'tasks')
+  console.log('progressItems:', progressStore.progressItems.length, 'items')
+  console.log('streaks:', streaksStore.streaks.length, 'streaks')
+  console.log('goals:', goalsStore.goals.length, 'goals')
   
   // Initialize today's completion
   updateTodayCompletion()
@@ -428,7 +424,58 @@ watch(() => goalsStore.goals, async () => {
 
 // Removed journal sync - handled separately in Journal page
 
-// Namespace object for template access
+// Test function to add some sample data
+const addTestData = () => {
+  const today = new Date()
+  
+  // Add some tasks for the last few days, all synced with current system date
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today)
+    date.setDate(date.getDate() - i)
+    
+    // Use local timezone for date string
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
+    
+    // Add 1-3 tasks per day
+    const taskCount = Math.floor(Math.random() * 3) + 1
+    for (let j = 0; j < taskCount; j++) {
+      const task = {
+        id: Date.now() + Math.random(),
+        text: `Task ${j + 1} for ${dateStr}`,
+        completed: Math.random() > 0.3, // 70% completion rate
+        priority: 'medium' as const,
+        dueDate: dateStr,
+        category: 'test'
+      }
+      localTasks.value.push(task)
+    }
+  }
+  
+  console.log('Added test data:', localTasks.value.length, 'tasks')
+  updateTodayCompletion()
+}
+
+// Debug function to show current date info
+const showDateInfo = () => {
+  const currentDate = getCurrentDate()
+  const utcDate = new Date().toISOString().split('T')[0]
+  const localDate = new Date()
+  
+  console.log('=== DATE DEBUG INFO ===')
+  console.log('Current Date (Local):', currentDate)
+  console.log('UTC Date:', utcDate)
+  console.log('Local Date Object:', localDate)
+  console.log('Timezone Offset:', localDate.getTimezoneOffset())
+  console.log('Today Tasks:', todayTasks.value.length)
+  console.log('All Tasks:', localTasks.value.length)
+  console.log('========================')
+}
+
+// Expose debug functions
+defineExpose({ addTestData, showDateInfo })
 </script>
 
 <template>
@@ -459,6 +506,18 @@ watch(() => goalsStore.goals, async () => {
           </p>
         </div>
         <div class="header-actions">
+          <button @click="addTestData" class="action-btn debug">
+            <Icon icon="lucide:plus" class="btn-icon" />
+            Add Test Data
+          </button>
+          <button @click="syncTasksWithCurrentDate" class="action-btn debug">
+            <Icon icon="lucide:refresh-cw" class="btn-icon" />
+            Sync with Today
+          </button>
+          <button @click="showDateInfo" class="action-btn debug">
+            <Icon icon="lucide:calendar" class="btn-icon" />
+            Show Date Info
+          </button>
           <button v-if="!authStore.isAuthenticated" class="action-btn" @click="$router.push('/auth')">
             <Icon icon="lucide:log-in" class="btn-icon" />
             Sign In
@@ -491,7 +550,7 @@ watch(() => goalsStore.goals, async () => {
         <div class="summary-card">
           <Icon icon="lucide:flame" class="summary-icon orange" />
           <div class="summary-content">
-            <span class="summary-number">{{ currentStats.current }}</span>
+            <span class="summary-number">{{ getCurrentStreak() }}</span>
             <span class="summary-label">CURRENT STREAK</span>
           </div>
         </div>
@@ -499,8 +558,8 @@ watch(() => goalsStore.goals, async () => {
         <div class="summary-card">
           <Icon icon="lucide:target" class="summary-icon purple" />
           <div class="summary-content">
-            <span class="summary-number">{{ localTasks.length }}</span>
-            <span class="summary-label">TOTAL TASKS</span>
+            <span class="summary-number">{{ getTotalCompletions() }}</span>
+            <span class="summary-label">TOTAL COMPLETIONS</span>
           </div>
         </div>
       </div>
@@ -760,6 +819,11 @@ watch(() => goalsStore.goals, async () => {
 
 .action-btn.danger {
   background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+}
+
+.action-btn.debug {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: #fff;
 }
 

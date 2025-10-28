@@ -113,7 +113,7 @@ export const useStreaksStore = defineStore('streaks', () => {
     return stats
   })
 
-  const updateHeatmapData = () => {
+  const updateHeatmapData = (activityType?: 'tasks' | 'focus' | 'journal' | 'routines') => {
     const newHeatmapData: Record<string, number> = {}
     const today = new Date()
     const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
@@ -126,10 +126,16 @@ export const useStreaksStore = defineStore('streaks', () => {
       }
     }
 
-    // Add actual streak data
+    // Add actual streak data filtered by activity type
     streaks.value.forEach(streak => {
       const dateStr = streak.date
       const value = streak.value ?? 0 // Ensure value is a number
+      
+      // If activityType is specified, only include streaks of that type
+      if (activityType && streak.activity_type !== activityType) {
+        return
+      }
+      
       if (dateStr && newHeatmapData.hasOwnProperty(dateStr)) {
         newHeatmapData[dateStr] = Math.max(newHeatmapData[dateStr] ?? 0, value)
       }
@@ -142,6 +148,32 @@ export const useStreaksStore = defineStore('streaks', () => {
     updateHeatmapData()
     return heatmapData.value
   })
+
+  const getHeatmapDataForActivity = (activityType: 'tasks' | 'focus' | 'journal' | 'routines') => {
+    const newHeatmapData: Record<string, number> = {}
+    const today = new Date()
+    const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
+
+    // Initialize all dates with 0
+    for (let d = new Date(oneYearAgo); d <= today; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0]
+      if (dateStr) {
+        newHeatmapData[dateStr] = 0
+      }
+    }
+
+    // Add actual streak data filtered by activity type
+    streaks.value.forEach(streak => {
+      const dateStr = streak.date
+      const value = streak.value ?? 0
+      
+      if (streak.activity_type === activityType && dateStr && newHeatmapData.hasOwnProperty(dateStr)) {
+        newHeatmapData[dateStr] = Math.max(newHeatmapData[dateStr] ?? 0, value)
+      }
+    })
+
+    return newHeatmapData
+  }
 
   // Actions
   const fetchStreaks = async () => {
@@ -234,6 +266,7 @@ export const useStreaksStore = defineStore('streaks', () => {
     // Getters
     getStreakStats,
     getHeatmapData,
+    getHeatmapDataForActivity,
 
     // Actions
     fetchStreaks,

@@ -18,7 +18,7 @@ const hoveredValue = ref(0)
 
 // Computed
 const heatmapData = computed(() => {
-  const data = streaksStore.getHeatmapData
+  const data = streaksStore.getHeatmapDataForActivity(props.activityType)
   const yearData: Record<string, number> = {}
   
   // Filter data for selected year
