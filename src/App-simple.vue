@@ -72,7 +72,7 @@
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   transition: all 0.3s ease;
 }
 

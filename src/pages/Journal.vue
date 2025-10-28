@@ -536,11 +536,11 @@ const getRelativeTime = (dateString: string) => {
 
 /* Header */
 .journal-header {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .header-content {
@@ -610,11 +610,11 @@ const getRelativeTime = (dateString: string) => {
 }
 
 .stat-card {
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -673,11 +673,11 @@ const getRelativeTime = (dateString: string) => {
 .view-toggle {
   display: flex;
   gap: 8px;
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 12px;
   padding: 4px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .toggle-btn {
@@ -713,11 +713,11 @@ const getRelativeTime = (dateString: string) => {
 
 /* Search Section */
 .search-section {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .search-container {
@@ -757,8 +757,8 @@ const getRelativeTime = (dateString: string) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -767,14 +767,14 @@ const getRelativeTime = (dateString: string) => {
 }
 
 .modal-content {
-  background: rgba(15, 15, 25, 0.95);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.9));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .modal-header {
@@ -1058,11 +1058,11 @@ const getRelativeTime = (dateString: string) => {
 
 /* Entries Section */
 .entries-section {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .section-title {
@@ -1088,16 +1088,16 @@ const getRelativeTime = (dateString: string) => {
 }
 
 .entry-item {
-  background: rgba(15, 15, 25, 0.4);
-  border: 1px solid rgba(139, 92, 246, 0.1);
+  background: color-mix(in oklab, var(--color-surface), transparent 30%);
+  border: 1px solid color-mix(in oklab, var(--color-border), transparent 30%);
   border-radius: 12px;
   padding: 20px;
   transition: all 0.2s ease;
 }
 
 .entry-item:hover {
-  background: rgba(15, 15, 25, 0.6);
-  border-color: rgba(139, 92, 246, 0.2);
+  background: color-mix(in oklab, var(--color-surface), transparent 10%);
+  border-color: var(--color-border, rgba(139, 92, 246, 0.2));
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
 }

@@ -162,13 +162,13 @@ const navItems = [
   display: grid;
   grid-template-columns: 240px 1fr;
   min-height: 100vh;
-  color: #e5e7eb;
-  background: #0f0f17;
+  color: var(--color-text, #e5e7eb);
+  background: transparent;
 }
 
 .sidebar {
-  background: rgba(15, 15, 25, 0.9);
-  border-right: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.9));
+  border-right: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   padding: 20px 16px;
   display: flex;
   flex-direction: column;
@@ -184,19 +184,19 @@ const navItems = [
   gap: 12px;
   padding: 12px 16px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-primary), transparent 90%), color-mix(in oklab, var(--color-secondary), transparent 90%));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
 }
 
 .logo-icon {
   font-size: 24px;
-  color: #a855f7;
+  color: var(--color-secondary, #a855f7);
 }
 
 .logo-text {
   font-size: 18px;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text, #fff);
   letter-spacing: -0.5px;
 }
 
@@ -213,7 +213,7 @@ const navItems = [
   gap: 12px;
   padding: 12px 16px;
   border-radius: 10px;
-  color: #94a3b8;
+  color: var(--color-text-secondary, #94a3b8);
   text-decoration: none;
   font-weight: 500;
   font-size: 14px;
@@ -223,16 +223,16 @@ const navItems = [
 }
 
 .nav-item:hover {
-  background: rgba(139, 92, 246, 0.1);
-  color: #e2e8f0;
+  background: color-mix(in oklab, var(--color-primary), transparent 90%);
+  color: var(--color-text, #e2e8f0);
   transform: translateX(2px);
 }
 
 .nav-item.active {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.2));
-  color: #fff;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-primary), transparent 80%), color-mix(in oklab, var(--color-secondary), transparent 80%));
+  color: var(--color-text, #fff);
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.3));
+  box-shadow: 0 4px 12px color-mix(in oklab, var(--color-primary), transparent 80%);
 }
 
 .nav-item.active::before {
@@ -243,7 +243,7 @@ const navItems = [
   transform: translateY(-50%);
   width: 4px;
   height: 20px;
-  background: linear-gradient(180deg, #a855f7, #8b5cf6);
+  background: linear-gradient(180deg, var(--color-secondary), var(--color-primary));
   border-radius: 0 2px 2px 0;
 }
 
@@ -287,26 +287,26 @@ const navItems = [
 }
 
 .auth-btn.signin {
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  color: #e2e8f0;
+  background: var(--color-surface, rgba(15, 15, 25, 0.8));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.3));
+  color: var(--color-text, #e2e8f0);
 }
 
 .auth-btn.signin:hover {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: rgba(139, 92, 246, 0.5);
+  background: color-mix(in oklab, var(--color-primary), transparent 90%);
+  border-color: color-mix(in oklab, var(--color-primary), transparent 60%);
   transform: translateY(-1px);
 }
 
 .auth-btn.signup {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: #fff;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 12px color-mix(in oklab, var(--color-primary), transparent 70%);
 }
 
 .auth-btn.signup:hover {
-  background: linear-gradient(135deg, #7c3aed, #9333ea);
-  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-primary), #000 10%), color-mix(in oklab, var(--color-secondary), #000 10%));
+  box-shadow: 0 6px 16px color-mix(in oklab, var(--color-primary), transparent 60%);
   transform: translateY(-1px);
 }
 
@@ -330,16 +330,16 @@ const navItems = [
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  color: #94a3b8;
+  background: color-mix(in oklab, var(--color-primary), transparent 90%);
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  color: var(--color-text-secondary, #94a3b8);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .footer-btn:hover {
-  background: rgba(139, 92, 246, 0.2);
-  color: #e2e8f0;
+  background: color-mix(in oklab, var(--color-primary), transparent 80%);
+  color: var(--color-text, #e2e8f0);
   transform: translateY(-1px);
 }
 
@@ -375,10 +375,10 @@ const navItems = [
   gap: 24px;
   text-align: center;
   padding: 40px;
-  background: rgba(15, 15, 25, 0.8);
+  background: var(--color-surface, rgba(15, 15, 25, 0.8));
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 20px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .error-icon {
@@ -389,13 +389,13 @@ const navItems = [
 .error-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text, #fff);
   margin: 0;
 }
 
 .error-message {
   font-size: 1rem;
-  color: #94a3b8;
+  color: var(--color-text-secondary, #94a3b8);
   margin: 0;
 }
 
@@ -404,7 +404,7 @@ const navItems = [
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   border: none;
   border-radius: 10px;
   color: #fff;
@@ -414,9 +414,9 @@ const navItems = [
 }
 
 .retry-btn:hover {
-  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-primary), #000 10%), color-mix(in oklab, var(--color-secondary), #000 10%));
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 16px color-mix(in oklab, var(--color-primary), transparent 70%);
 }
 
 .btn-icon {

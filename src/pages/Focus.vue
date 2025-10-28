@@ -323,7 +323,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   position: relative;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   box-shadow: 
     0 0 0 1px rgba(139, 92, 246, 0.1),
     0 8px 32px rgba(0, 0, 0, 0.3),
@@ -452,7 +452,7 @@ onUnmounted(() => {
   color: #94a3b8;
   cursor: pointer;
   transition: all 0.3s ease;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   min-width: 120px;
 }
 
@@ -506,7 +506,7 @@ onUnmounted(() => {
   background: rgba(15, 15, 25, 0.6);
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 12px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   transition: all 0.3s ease;
 }
 

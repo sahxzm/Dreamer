@@ -285,7 +285,7 @@ const getActivityIcon = (activityType: string) => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   position: relative;
 }
 
@@ -446,7 +446,7 @@ const getActivityIcon = (activityType: string) => {
   border: 1px solid rgba(139, 92, 246, 0.3);
   border-radius: 8px;
   padding: 8px 12px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   z-index: 1000;
   pointer-events: none;
 }

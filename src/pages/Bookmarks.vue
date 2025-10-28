@@ -544,7 +544,7 @@ const extractDomain = (url: string) => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .header-content {
@@ -618,7 +618,7 @@ const extractDomain = (url: string) => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -679,7 +679,7 @@ const extractDomain = (url: string) => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -799,7 +799,7 @@ const extractDomain = (url: string) => {
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .modal-header {
@@ -1004,7 +1004,7 @@ const extractDomain = (url: string) => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .section-header {

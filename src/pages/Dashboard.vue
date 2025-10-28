@@ -202,11 +202,11 @@ const handleQuickAction = (action: string) => {
 
 /* Welcome Section */
 .welcome-section {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-primary), transparent 90%), color-mix(in oklab, var(--color-secondary), transparent 80%));
+  border: 1px solid var(--color-border, rgba(225, 215, 249, 0.2));
   border-radius: 20px;
   padding: 32px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   position: relative;
   overflow: hidden;
 }
@@ -218,7 +218,7 @@ const handleQuickAction = (action: string) => {
   right: -20%;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.1), transparent);
+  background: radial-gradient(circle, rgba(95, 95, 95, 0.1), transparent);
   border-radius: 50%;
 }
 
@@ -254,11 +254,11 @@ const handleQuickAction = (action: string) => {
 }
 
 .stat-card {
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -315,11 +315,11 @@ const handleQuickAction = (action: string) => {
 
 /* Quick Actions */
 .quick-actions {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .section-title {
@@ -377,11 +377,11 @@ const handleQuickAction = (action: string) => {
 
 /* Today's Tasks */
 .today-tasks {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .section-header {
@@ -433,15 +433,15 @@ const handleQuickAction = (action: string) => {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background: rgba(15, 15, 25, 0.4);
-  border: 1px solid rgba(139, 92, 246, 0.1);
+  background: color-mix(in oklab, var(--color-surface), transparent 30%);
+  border: 1px solid color-mix(in oklab, var(--color-border), transparent 30%);
   border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .task-item:hover {
-  background: rgba(15, 15, 25, 0.6);
-  border-color: rgba(139, 92, 246, 0.2);
+  background: color-mix(in oklab, var(--color-surface), transparent 10%);
+  border-color: var(--color-border, rgba(139, 92, 246, 0.2));
 }
 
 .task-item.completed {

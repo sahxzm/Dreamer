@@ -286,11 +286,11 @@ const getCategoryColor = (category: string) => {
 
 /* Header */
 .routines-header {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .header-content {
@@ -366,11 +366,11 @@ const getCategoryColor = (category: string) => {
 }
 
 .stat-card {
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -442,11 +442,11 @@ const getCategoryColor = (category: string) => {
 
 /* Add Routine Form */
 .add-routine {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .add-form {
@@ -509,11 +509,11 @@ const getCategoryColor = (category: string) => {
 
 /* Today's Routines */
 .today-routines {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .routines-list {
@@ -523,16 +523,16 @@ const getCategoryColor = (category: string) => {
 }
 
 .routine-item {
-  background: rgba(15, 15, 25, 0.4);
-  border: 1px solid rgba(139, 92, 246, 0.1);
+  background: color-mix(in oklab, var(--color-surface), transparent 30%);
+  border: 1px solid color-mix(in oklab, var(--color-border), transparent 30%);
   border-radius: 12px;
   padding: 20px;
   transition: all 0.2s ease;
 }
 
 .routine-item:hover {
-  background: rgba(15, 15, 25, 0.6);
-  border-color: rgba(139, 92, 246, 0.2);
+  background: color-mix(in oklab, var(--color-surface), transparent 10%);
+  border-color: var(--color-border, rgba(139, 92, 246, 0.2));
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
 }

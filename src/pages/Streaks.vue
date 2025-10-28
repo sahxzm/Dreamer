@@ -724,11 +724,11 @@ const getCurrentDate = () => {
 
 /* Header */
 .page-header {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-primary), transparent 90%), color-mix(in oklab, var(--color-secondary), transparent 90%));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 20px;
   padding: 32px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -818,7 +818,7 @@ const getCurrentDate = () => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .selector-header {
@@ -921,7 +921,7 @@ const getCurrentDate = () => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .time-range-buttons {
@@ -965,7 +965,7 @@ const getCurrentDate = () => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .stats-grid {
@@ -1031,7 +1031,7 @@ const getCurrentDate = () => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .heatmap-header {
@@ -1246,7 +1246,7 @@ const getCurrentDate = () => {
   border: 1px solid rgba(139, 92, 246, 0.3);
   border-radius: 8px;
   padding: 12px 16px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   z-index: 1000;
   pointer-events: none;
   transform: translateX(-50%);
@@ -1290,10 +1290,10 @@ const getCurrentDate = () => {
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 12px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   flex: 1;
   min-width: 200px;
   transition: all 0.3s ease;
@@ -1354,7 +1354,7 @@ const getCurrentDate = () => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   margin-bottom: 24px;
 }
 
@@ -1506,7 +1506,7 @@ const getCurrentDate = () => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .progress-grid {
@@ -1698,7 +1698,7 @@ const getCurrentDate = () => {
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .section-header {
@@ -1958,7 +1958,7 @@ const getCurrentDate = () => {
   background: rgba(15, 15, 25, 0.6);
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 20px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .auth-icon {

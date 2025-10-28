@@ -375,17 +375,17 @@ onMounted(() => {
 
 /* Header */
 .settings-header {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-primary), transparent 90%), color-mix(in oklab, var(--color-secondary), transparent 90%));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 20px;
   padding: 32px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .page-title {
   font-size: 2.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -397,12 +397,12 @@ onMounted(() => {
 
 .title-icon {
   font-size: 2rem;
-  color: #8b5cf6;
+  color: var(--color-primary, #8b5cf6);
 }
 
 .page-subtitle {
   font-size: 1.1rem;
-  color: #cbd5e1;
+  color: var(--color-text-secondary, #cbd5e1);
   margin: 0;
   opacity: 0.9;
 }
@@ -416,11 +416,11 @@ onMounted(() => {
 
 /* Sidebar */
 .settings-sidebar {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: color-mix(in oklab, var(--color-surface), transparent 20%);
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 20px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   height: fit-content;
 }
 
@@ -438,7 +438,7 @@ onMounted(() => {
   border-radius: 10px;
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--color-text-secondary, #94a3b8);
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
@@ -446,14 +446,14 @@ onMounted(() => {
 }
 
 .nav-item:hover {
-  background: rgba(139, 92, 246, 0.1);
-  color: #e2e8f0;
+  background: color-mix(in oklab, var(--color-primary), transparent 90%);
+  color: var(--color-text, #e2e8f0);
 }
 
 .nav-item.active {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.2));
-  color: #fff;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-primary), transparent 80%), color-mix(in oklab, var(--color-secondary), transparent 80%));
+  color: var(--color-text, #fff);
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.3));
 }
 
 .nav-icon {
@@ -468,11 +468,11 @@ onMounted(() => {
 
 /* Content */
 .settings-content {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: color-mix(in oklab, var(--color-surface), transparent 20%);
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 32px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .settings-section {
@@ -484,7 +484,7 @@ onMounted(() => {
 .section-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-text, #fff);
   margin: 0;
 }
 
@@ -497,13 +497,13 @@ onMounted(() => {
 .setting-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--color-text, #e2e8f0);
   margin: 0;
 }
 
 .setting-description {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--color-text-secondary, #94a3b8);
   margin: 0;
 }
 
@@ -520,21 +520,21 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 16px;
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.8));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .theme-option:hover {
-  border-color: rgba(139, 92, 246, 0.4);
+  border-color: color-mix(in oklab, var(--color-primary), transparent 60%);
   transform: translateY(-2px);
 }
 
 .theme-option.active {
-  border-color: var(--theme-primary);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 16px color-mix(in oklab, var(--color-primary), transparent 80%);
 }
 
 .theme-preview {
@@ -542,7 +542,7 @@ onMounted(() => {
   height: 40px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
 }
 
 .preview-header {
@@ -559,7 +559,7 @@ onMounted(() => {
 .theme-name {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #e2e8f0;
+  color: var(--color-text, #e2e8f0);
 }
 
 /* Background Grid */
@@ -576,8 +576,8 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 16px;
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.8));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -585,26 +585,26 @@ onMounted(() => {
 }
 
 .background-option:hover {
-  border-color: rgba(139, 92, 246, 0.4);
+  border-color: color-mix(in oklab, var(--color-primary), transparent 60%);
   transform: translateY(-2px);
 }
 
 .background-option.active {
-  border-color: #8b5cf6;
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 16px color-mix(in oklab, var(--color-primary), transparent 80%);
 }
 
 .background-preview {
   width: 60px;
   height: 40px;
   border-radius: 8px;
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
 }
 
 .background-name {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #e2e8f0;
+  color: var(--color-text, #e2e8f0);
 }
 
 .remove-background {
@@ -613,7 +613,7 @@ onMounted(() => {
   right: 8px;
   width: 20px;
   height: 20px;
-  background: rgba(239, 68, 68, 0.8);
+  background: color-mix(in oklab, #ef4444, transparent 20%);
   border: none;
   border-radius: 50%;
   color: #fff;
@@ -645,18 +645,18 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: color-mix(in oklab, var(--color-primary), transparent 90%);
+  border: 1px solid color-mix(in oklab, var(--color-primary), transparent 60%);
   border-radius: 10px;
-  color: #8b5cf6;
+  color: var(--color-primary);
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
 }
 
 .upload-btn:hover {
-  background: rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.5);
+  background: color-mix(in oklab, var(--color-primary), transparent 80%);
+  border-color: color-mix(in oklab, var(--color-primary), transparent 40%);
 }
 
 .upload-icon {
@@ -668,9 +668,10 @@ onMounted(() => {
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.8));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 12px;
+  backdrop-filter: blur(2px);
 }
 
 .file-input {
@@ -682,17 +683,17 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: color-mix(in oklab, var(--color-primary), transparent 90%);
+  border: 1px solid color-mix(in oklab, var(--color-primary), transparent 60%);
   border-radius: 8px;
-  color: #8b5cf6;
+  color: var(--color-primary);
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
 }
 
 .file-label:hover {
-  background: rgba(139, 92, 246, 0.2);
+  background: color-mix(in oklab, var(--color-primary), transparent 80%);
 }
 
 .file-icon {
@@ -701,17 +702,17 @@ onMounted(() => {
 
 .name-input {
   padding: 12px 16px;
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.8));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 8px;
-  color: #e2e8f0;
+  color: var(--color-text, #e2e8f0);
   font-size: 14px;
 }
 
 .name-input:focus {
   outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary), transparent 85%);
 }
 
 .upload-actions {
@@ -729,12 +730,12 @@ onMounted(() => {
 }
 
 .add-btn {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: #fff;
 }
 
 .add-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-primary), #000 10%), color-mix(in oklab, var(--color-secondary), #000 10%));
 }
 
 .add-btn:disabled {
@@ -743,13 +744,13 @@ onMounted(() => {
 }
 
 .cancel-btn {
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  color: #e2e8f0;
+  background: var(--color-surface, rgba(15, 15, 25, 0.8));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.3));
+  color: var(--color-text, #e2e8f0);
 }
 
 .cancel-btn:hover {
-  background: rgba(139, 92, 246, 0.1);
+  background: color-mix(in oklab, var(--color-primary), transparent 90%);
 }
 
 /* Profile Info */
@@ -764,7 +765,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+  border-bottom: 1px solid color-mix(in oklab, var(--color-primary), transparent 90%);
 }
 
 .info-item:last-child {
@@ -773,13 +774,13 @@ onMounted(() => {
 
 .info-label {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--color-text-secondary, #94a3b8);
   font-weight: 500;
 }
 
 .info-value {
   font-size: 0.9rem;
-  color: #e2e8f0;
+  color: var(--color-text, #e2e8f0);
   font-weight: 500;
 }
 
@@ -804,24 +805,24 @@ onMounted(() => {
 }
 
 .action-btn:not(.danger) {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: #fff;
 }
 
 .action-btn.danger {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: color-mix(in oklab, #ef4444, transparent 90%);
+  border: 1px solid color-mix(in oklab, #ef4444, transparent 70%);
   color: #fca5a5;
 }
 
 .action-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 16px color-mix(in oklab, var(--color-primary), transparent 80%);
 }
 
 .action-btn.danger:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.5);
+  background: color-mix(in oklab, #ef4444, transparent 80%);
+  border-color: color-mix(in oklab, #ef4444, transparent 60%);
 }
 
 .btn-icon {
@@ -850,7 +851,7 @@ onMounted(() => {
   position: relative;
   width: 44px;
   height: 24px;
-  background: rgba(139, 92, 246, 0.2);
+  background: color-mix(in oklab, var(--color-primary), transparent 80%);
   border-radius: 12px;
   transition: all 0.2s ease;
 }
@@ -868,7 +869,7 @@ onMounted(() => {
 }
 
 .toggle-input:checked + .toggle-slider {
-  background: #8b5cf6;
+  background: var(--color-primary);
 }
 
 .toggle-input:checked + .toggle-slider::before {
@@ -877,7 +878,7 @@ onMounted(() => {
 
 .toggle-label {
   font-size: 0.9rem;
-  color: #e2e8f0;
+  color: var(--color-text, #e2e8f0);
   font-weight: 500;
 }
 
@@ -893,9 +894,10 @@ onMounted(() => {
   align-items: center;
   gap: 20px;
   padding: 24px;
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.8));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 12px;
+  backdrop-filter: blur(2px);
 }
 
 .app-logo {
@@ -904,7 +906,7 @@ onMounted(() => {
   justify-content: center;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   border-radius: 16px;
   color: #fff;
 }
@@ -920,33 +922,34 @@ onMounted(() => {
 .app-name {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text, #fff);
   margin-bottom: 4px;
 }
 
 .app-version {
   font-size: 0.9rem;
-  color: #8b5cf6;
+  color: var(--color-primary);
   margin-bottom: 8px;
 }
 
 .app-description {
   font-size: 1rem;
-  color: #94a3b8;
+  color: var(--color-text-secondary, #94a3b8);
   margin: 0;
 }
 
 .feature-list {
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.8));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 12px;
   padding: 24px;
+  backdrop-filter: blur(2px);
 }
 
 .feature-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--color-text, #e2e8f0);
   margin-bottom: 16px;
 }
 
@@ -964,7 +967,7 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   font-size: 0.9rem;
-  color: #e2e8f0;
+  color: var(--color-text, #e2e8f0);
 }
 
 .feature-icon {
@@ -984,18 +987,18 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: color-mix(in oklab, var(--color-primary), transparent 90%);
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 8px;
-  color: #8b5cf6;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .link:hover {
-  background: rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.4);
+  background: color-mix(in oklab, var(--color-primary), transparent 80%);
+  border-color: color-mix(in oklab, var(--color-primary), transparent 60%);
   transform: translateY(-1px);
 }
 

@@ -47,7 +47,7 @@ import { Icon } from '@iconify/vue'
   border-radius: 16px;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1));
   border: 1px solid rgba(139, 92, 246, 0.2);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .logo-icon {

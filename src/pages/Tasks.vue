@@ -255,11 +255,11 @@ const getPriorityColor = (priority: string) => {
 
 /* Header */
 .tasks-header {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .header-content {
@@ -331,11 +331,11 @@ const getPriorityColor = (priority: string) => {
 .view-toggle {
   display: flex;
   gap: 8px;
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 12px;
   padding: 4px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .toggle-btn {
@@ -371,11 +371,11 @@ const getPriorityColor = (priority: string) => {
 
 /* Progress Section */
 .progress-section {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 24px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .progress-stats {
@@ -447,11 +447,11 @@ const getPriorityColor = (priority: string) => {
 
 /* Quick Add */
 .quick-add {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface, rgba(15, 15, 25, 0.5));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
   border-radius: 16px;
   padding: 20px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .add-form {
@@ -522,16 +522,16 @@ const getPriorityColor = (priority: string) => {
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: color-mix(in oklab, var(--color-surface), transparent 30%);
+  border: 1px solid color-mix(in oklab, var(--color-border), transparent 30%);
   border-radius: 12px;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   transition: all 0.2s ease;
 }
 
 .task-item:hover {
-  background: rgba(15, 15, 25, 0.8);
-  border-color: rgba(139, 92, 246, 0.3);
+  background: color-mix(in oklab, var(--color-surface), transparent 10%);
+  border-color: var(--color-border, rgba(139, 92, 246, 0.2));
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
 }

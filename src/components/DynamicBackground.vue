@@ -4,6 +4,9 @@
 
 <template>
   <div class="dynamic-background">
+    <!-- Base background from theme store -->
+    <div class="themed-base"></div>
+
     <!-- Car background image -->
     <div class="car-background"></div>
     
@@ -25,6 +28,12 @@
   bottom: 0;
   z-index: -1;
   overflow: hidden;
+}
+
+.themed-base {
+  position: absolute;
+  inset: 0;
+  background: var(--body-background);
 }
 
 .car-background {
@@ -54,15 +63,15 @@
       0deg,
       transparent,
       transparent 2px,
-      rgba(139, 92, 246, 0.03) 2px,
-      rgba(139, 92, 246, 0.03) 4px
+      color-mix(in oklab, var(--color-primary), transparent 97%) 2px,
+      color-mix(in oklab, var(--color-primary), transparent 97%) 4px
     ),
     repeating-linear-gradient(
       90deg,
       transparent,
       transparent 2px,
-      rgba(139, 92, 246, 0.03) 2px,
-      rgba(139, 92, 246, 0.03) 4px
+      color-mix(in oklab, var(--color-primary), transparent 97%) 2px,
+      color-mix(in oklab, var(--color-primary), transparent 97%) 4px
     );
   pointer-events: none;
 }
@@ -75,7 +84,7 @@
   bottom: 0;
   background: radial-gradient(
     1200px 800px at 80% 20%, 
-    rgba(139, 92, 246, 0.1), 
+    color-mix(in oklab, var(--color-primary), transparent 90%), 
     transparent
   );
 }
@@ -88,7 +97,7 @@
   bottom: 0;
   background: linear-gradient(
     45deg,
-    rgba(139, 92, 246, 0.05),
+    color-mix(in oklab, var(--color-primary), transparent 95%),
     transparent
   );
 }

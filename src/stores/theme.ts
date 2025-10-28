@@ -33,7 +33,7 @@ export const useThemeStore = defineStore('theme', () => {
       primary: '#8b5cf6',
       secondary: '#a855f7',
       background: '#0f0f17',
-      surface: 'rgba(15, 15, 25, 0.8)',
+      surface: 'rgba(15, 15, 25, 0.4)',
       text: '#e2e8f0',
       textSecondary: '#94a3b8',
       border: 'rgba(139, 92, 246, 0.2)',
@@ -44,7 +44,7 @@ export const useThemeStore = defineStore('theme', () => {
       primary: '#7c3aed',
       secondary: '#9333ea',
       background: '#ffffff',
-      surface: 'rgba(255, 255, 255, 0.8)',
+      surface: 'rgba(255, 255, 255, 0.4)',
       text: '#1f2937',
       textSecondary: '#6b7280',
       border: 'rgba(124, 58, 237, 0.2)',
@@ -55,7 +55,7 @@ export const useThemeStore = defineStore('theme', () => {
       primary: '#8b5cf6',
       secondary: '#a855f7',
       background: '#1a0b2e',
-      surface: 'rgba(26, 11, 46, 0.8)',
+      surface: 'rgba(26, 11, 46, 0.4)',
       text: '#e2e8f0',
       textSecondary: '#c4b5fd',
       border: 'rgba(139, 92, 246, 0.3)',
@@ -66,7 +66,7 @@ export const useThemeStore = defineStore('theme', () => {
       primary: '#3b82f6',
       secondary: '#60a5fa',
       background: '#0f172a',
-      surface: 'rgba(15, 23, 42, 0.8)',
+      surface: 'rgba(15, 23, 42, 0.4)',
       text: '#f1f5f9',
       textSecondary: '#94a3b8',
       border: 'rgba(59, 130, 246, 0.2)',
@@ -77,7 +77,7 @@ export const useThemeStore = defineStore('theme', () => {
       primary: '#10b981',
       secondary: '#34d399',
       background: '#064e3b',
-      surface: 'rgba(6, 78, 59, 0.8)',
+      surface: 'rgba(6, 78, 59, 0.4)',
       text: '#ecfdf5',
       textSecondary: '#a7f3d0',
       border: 'rgba(16, 185, 129, 0.2)',
@@ -189,6 +189,26 @@ export const useThemeStore = defineStore('theme', () => {
     root.style.setProperty('--color-text-secondary', theme.textSecondary)
     root.style.setProperty('--color-border', theme.border)
     root.style.setProperty('--color-accent', theme.accent)
+
+    // Color scheme for form controls, scrollbars, etc.
+    const scheme = currentTheme.value === 'light' ? 'light' : 'dark'
+    root.style.setProperty('color-scheme', scheme)
+
+    // Optional: expose RGB components for effects that need rgba
+    const hexToRgb = (hex: string) => {
+      const normalized = hex.replace('#', '')
+      const bigint = parseInt(normalized.length === 3
+        ? normalized.split('').map(ch => ch + ch).join('')
+        : normalized, 16)
+      const r = (bigint >> 16) & 255
+      const g = (bigint >> 8) & 255
+      const b = bigint & 255
+      return `${r}, ${g}, ${b}`
+    }
+    try {
+      root.style.setProperty('--color-primary-rgb', hexToRgb(theme.primary))
+      root.style.setProperty('--color-secondary-rgb', hexToRgb(theme.secondary))
+    } catch {}
   }
 
   const applyBackground = () => {

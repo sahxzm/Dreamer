@@ -231,7 +231,7 @@ defineExpose({
   color: #e2e8f0;
   cursor: pointer;
   transition: all 0.2s ease;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
 }
 
 .profile-btn:hover {
@@ -293,7 +293,7 @@ defineExpose({
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -309,7 +309,7 @@ defineExpose({
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(2px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
