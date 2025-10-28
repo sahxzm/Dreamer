@@ -1,6 +1,10 @@
 # Dreamer - Personal Productivity Platform
 
+<<<<<<< HEAD
 A comprehensive productivity and habit tracking application built with Vue.js 3, TypeScript, and Supabase.
+=======
+This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more .
+>>>>>>> 8e010413af82a0b8193973297659a8e2f124faf6
 
 ## Features
 

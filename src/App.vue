@@ -62,9 +62,14 @@ const reloadPage = () => {
   window.location.reload()
 }
 
-// const openUserProfile = () => {
-//   userProfile.value?.openProfile()
-// }
+// Profile entry click handler (opens profile if signed in, auth modal otherwise)
+const openUserEntry = () => {
+  if (authStore.isAuthenticated) {
+    userProfile.value?.openProfile()
+    return
+  }
+  openAuthModal('signin')
+}
 
 const navItems = [
   { path: '/', label: 'DASH', icon: 'lucide:layout-dashboard' },
@@ -77,6 +82,8 @@ const navItems = [
   { path: '/bookmarks', label: 'BOOKMARKS', icon: 'lucide:link' },
   { path: '/settings', label: 'SETTINGS', icon: 'lucide:settings' }
 ]
+
+
 </script>
 
 <template>
@@ -118,7 +125,28 @@ const navItems = [
         </router-link>
       </nav>
       
-      <div class="sidebar-footer">
+      <div class="sidebar-footer" :key="`auth-${authStore.isAuthenticated}`">
+        <!-- Debug info -->
+        <div style="font-size: 10px; color: #666; margin-bottom: 8px;">
+          Auth: {{ authStore.isAuthenticated ? 'YES' : 'NO' }}
+        </div>
+        
+        <!-- Always-visible profile entry -->
+        <button class="profile-entry" @click="openUserEntry">
+          <div class="avatar">
+            <Icon icon="lucide:user" class="avatar-icon" />
+          </div>
+          <div class="profile-info">
+            <span class="profile-name">
+              {{ authStore.user?.user_metadata?.full_name || authStore.user?.user_metadata?.name || authStore.user?.email?.split('@')[0] || 'User' }}
+            </span>
+            <span class="profile-email">
+              {{ authStore.isAuthenticated ? (authStore.user?.email || '') : 'Sign in to view profile' }}
+            </span>
+          </div>
+          <Icon :icon="authStore.isAuthenticated ? 'lucide:chevron-down' : 'lucide:log-in'" class="chevron-icon" />
+        </button>
+
         <!-- Auth Section -->
         <div v-if="!authStore.isAuthenticated" class="auth-section">
           <button @click="openAuthModal('signin')" class="auth-btn signin">
@@ -314,8 +342,76 @@ const navItems = [
   font-size: 16px;
 }
 
+.profile-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--color-surface, rgba(15, 15, 25, 0.6));
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  border-radius: 12px;
+  color: var(--color-text, #e2e8f0);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(2px);
+  width: 100%;
+  text-align: left;
+}
+
+.profile-entry:hover {
+  background: color-mix(in oklab, var(--color-primary), transparent 90%);
+  border-color: color-mix(in oklab, var(--color-primary), transparent 60%);
+  transform: translateY(-1px);
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border-radius: 8px;
+  color: #fff;
+}
+
+.avatar-icon {
+  font-size: 16px;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.profile-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text, #fff);
+  line-height: 1;
+}
+
+.profile-email {
+  font-size: 12px;
+  color: var(--color-text-secondary, #94a3b8);
+  line-height: 1;
+}
+
+.chevron-icon {
+  font-size: 14px;
+  color: var(--color-text-secondary, #94a3b8);
+  transition: transform 0.2s ease;
+}
+
+.profile-entry:hover .chevron-icon {
+  transform: rotate(180deg);
+}
+
 .user-section {
   margin-bottom: 8px;
+  width: 100%;
 }
 
 .footer-actions {

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { supabase } from '../api/supabase'
 import { useAuthStore } from './auth'
 import { useLocalStorage } from '../utils/storage'
@@ -44,7 +44,8 @@ export const useProgressStore = defineStore('progress', () => {
   const today = computed(() => new Date().toISOString().split('T')[0])
   const thisWeek = computed(() => {
     const now = new Date()
-    const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()))
+    const startOfWeek = new Date(now)
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
     return startOfWeek.toISOString().split('T')[0]
   })
   const thisMonth = computed(() => {
@@ -76,11 +77,13 @@ export const useProgressStore = defineStore('progress', () => {
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
 
     const todayCompleted = completedToday.value.length
+    const thisWeekVal = thisWeek.value
+    const thisMonthVal = thisMonth.value
     const weekCompleted = progressItems.value.filter(item => 
-      item.status === 'completed' && item.date >= thisWeek.value
+      item.status === 'completed' && thisWeekVal && item.date >= thisWeekVal
     ).length
     const monthCompleted = progressItems.value.filter(item => 
-      item.status === 'completed' && item.date >= thisMonth.value
+      item.status === 'completed' && thisMonthVal && item.date >= thisMonthVal
     ).length
 
     return {
@@ -117,10 +120,11 @@ export const useProgressStore = defineStore('progress', () => {
     const categories: Record<string, ProgressItem[]> = {}
     
     progressItems.value.forEach(item => {
-      if (!categories[item.category]) {
-        categories[item.category] = []
+      const category = item.category || 'general'
+      if (!categories[category]) {
+        categories[category] = []
       }
-      categories[item.category].push(item)
+      categories[category].push(item)
     })
 
     return categories
@@ -210,14 +214,15 @@ export const useProgressStore = defineStore('progress', () => {
     if (!authStore.isAuthenticated) {
       // Update locally if not authenticated
       const index = progressItems.value.findIndex(item => item.id === itemId)
-      if (index !== -1) {
+      if (index !== -1 && progressItems.value[index]) {
         progressItems.value[index] = {
           ...progressItems.value[index],
           ...updates,
           updated_at: new Date().toISOString()
-        }
+        } as ProgressItem
+        return { data: progressItems.value[index], error: null }
       }
-      return { data: progressItems.value[index], error: null }
+      return { data: null, error: new Error('Item not found') }
     }
 
     loading.value = true
@@ -284,10 +289,10 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   // Real-time sync functions
-  const syncWithTasks = (tasks: any[]) => {
+  const syncWithTasks = async (tasks: any[]) => {
     const today = new Date().toISOString().split('T')[0]
     
-    tasks.forEach(task => {
+    for (const task of tasks) {
       const existingItem = progressItems.value.find(item => 
         item.type === 'task' && 
         item.title === task.text && 
@@ -296,7 +301,7 @@ export const useProgressStore = defineStore('progress', () => {
 
       if (!existingItem && task.dueDate === today) {
         // Create new progress item for today's tasks
-        createProgressItem({
+        await createProgressItem({
           type: 'task',
           title: task.text,
           description: `Task: ${task.text}`,
@@ -309,16 +314,16 @@ export const useProgressStore = defineStore('progress', () => {
         })
       } else if (existingItem && existingItem.status !== (task.completed ? 'completed' : 'pending')) {
         // Update existing item status
-        updateProgressItem(existingItem.id, {
+        await updateProgressItem(existingItem.id, {
           status: task.completed ? 'completed' : 'pending',
           completed_at: task.completed ? new Date().toISOString() : undefined
         })
       }
-    })
+    }
   }
 
-  const syncWithGoals = (goals: any[]) => {
-    goals.forEach(goal => {
+  const syncWithGoals = async (goals: any[]) => {
+    for (const goal of goals) {
       const existingItem = progressItems.value.find(item => 
         item.type === 'goal' && 
         item.title === goal.title
@@ -326,27 +331,30 @@ export const useProgressStore = defineStore('progress', () => {
 
       if (!existingItem) {
         // Create new progress item for goal
-        createProgressItem({
+        const goalData: Omit<ProgressItem, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
           type: 'goal',
           title: goal.title,
           description: goal.description,
-          status: goal.status === 'completed' ? 'completed' : 'active',
+          status: goal.status === 'completed' ? 'completed' : 'pending',
           priority: goal.priority,
           category: goal.category,
           value: goal.current_value,
           target_value: goal.target_value,
-          date: new Date().toISOString().split('T')[0],
-          completed_at: goal.completed_at
-        })
-      } else if (existingItem.value !== goal.current_value || existingItem.status !== goal.status) {
+          date: new Date().toISOString().split('T')[0] || new Date().toISOString()
+        }
+        if (goal.completed_at) {
+          goalData.completed_at = goal.completed_at
+        }
+        await createProgressItem(goalData)
+      } else if (existingItem.value !== goal.current_value || existingItem.status !== (goal.status === 'completed' ? 'completed' : 'pending')) {
         // Update existing goal progress
-        updateProgressItem(existingItem.id, {
+        await updateProgressItem(existingItem.id, {
           value: goal.current_value,
-          status: goal.status === 'completed' ? 'completed' : 'active',
-          completed_at: goal.completed_at
+          status: goal.status === 'completed' ? 'completed' : 'pending',
+          completed_at: goal.completed_at || undefined
         })
       }
-    })
+    }
   }
 
   // Auto-sync when data changes

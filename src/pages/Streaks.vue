@@ -22,113 +22,260 @@ const localTasks = useLocalStorage<Array<{
   category: string
 }>>('tasks', [])
 
+// Historical completion data by date
+const dailyCompletions = useLocalStorage<Record<string, number>>('daily_completions', {})
+
+// Function to update today's completion count
+const updateTodayCompletion = () => {
+  const today = new Date().toISOString().split('T')[0]
+  if (!today) return
+  const todayTasksList = localTasks.value.filter(task => task.dueDate === today)
+  const completedTasksCount = todayTasksList.filter(task => task.completed).length
+  dailyCompletions.value = { ...dailyCompletions.value, [today]: completedTasksCount }
+}
+
 // Activity tracking for today - computed from real data or local storage
 const todayActivity = computed(() => {
   const today = new Date().toISOString().split('T')[0]
   
-  if (authStore.isAuthenticated) {
-    // Get today's completed items from progress store
-    const completedToday = progressStore.completedToday
-    
-    // Count by type
-    const tasks = completedToday.filter(item => item.type === 'task').length
-    const goals = completedToday.filter(item => item.type === 'goal').length
-    const pomodoros = completedToday.filter(item => item.type === 'focus').length
-    const notes = completedToday.filter(item => item.type === 'journal').length
-    
-    return { tasks, goals, pomodoros, notes }
-  } else {
-    // Use local tasks data
-    const todayTasks = localTasks.value.filter(task => task.dueDate === today)
-    const completedTasks = todayTasks.filter(task => task.completed).length
-    
-    // Generate some demo data for other activities
-    const demoGoals = Math.floor(Math.random() * 3)
-    const demoPomodoros = Math.floor(Math.random() * 5)
-    const demoNotes = Math.floor(Math.random() * 2)
-    
+  // Always use local tasks for today's completed tasks count
+  const todayTasksList = localTasks.value.filter(task => task.dueDate === today)
+  const completedTasks = todayTasksList.filter(task => task.completed).length
+  
+  // For unauthenticated users, only return tasks
+  if (!authStore.isAuthenticated) {
     return {
       tasks: completedTasks,
-      goals: demoGoals,
-      pomodoros: demoPomodoros,
-      notes: demoNotes
+      goals: 0,
+      pomodoros: 0,
+      notes: 0
     }
   }
+  
+  // For authenticated users, combine local tasks with progress store
+  const completedToday = progressStore.completedToday
+  
+  // Count by type (tasks come from localTasks, others from progress store)
+  const tasks = completedTasks
+  const goals = completedToday.filter(item => item.type === 'goal').length
+  const pomodoros = completedToday.filter(item => item.type === 'focus').length
+  const notes = completedToday.filter(item => item.type === 'journal').length
+  
+  return { tasks, goals, pomodoros, notes }
 })
 
 // Activity data for heatmap - computed from real data or local storage
 const activityData = computed(() => {
   const data: Array<{date: string, level: number, completions: number, tasks: number, goals: number, pomodoros: number, notes: number}> = []
   const today = new Date()
+  today.setHours(0, 0, 0, 0) // Normalize to start of day
   
-  // Initialize data for the past year
-  for (let i = 364; i >= 0; i--) {
+  // Calculate dates for the last year
+  for (let i = 0; i < 365; i++) {
     const date = new Date(today)
     date.setDate(date.getDate() - i)
     const dateStr = date.toISOString().split('T')[0] || ''
     
+    // Initialize with default values
+    let tasks = 0
+    let goals = 0
+    let pomodoros = 0
+    let notes = 0
+    
+    // Get local task completions for this date
+    const dayTasks = localTasks.value.filter(task => {
+      if (!task.dueDate) return false
+      const taskDate = new Date(task.dueDate)
+      taskDate.setHours(0, 0, 0, 0)
+      return taskDate.getTime() === date.getTime() && task.completed
+    })
+    
+    tasks = dayTasks.length
+    
     if (authStore.isAuthenticated) {
-      // Get real data for this date from progress store
-      const dayItems = progressStore.progressItems.filter(item => item.date === dateStr && item.status === 'completed')
-      
-      const tasks = dayItems.filter(item => item.type === 'task').length
-      const goals = dayItems.filter(item => item.type === 'goal').length
-      const pomodoros = dayItems.filter(item => item.type === 'focus').length
-      const notes = dayItems.filter(item => item.type === 'journal').length
-      
-      const completions = tasks + goals + pomodoros + notes
-      const level = Math.min(4, Math.floor(completions / 3))
-      
-      data.push({
-        date: dateStr,
-        level,
-        completions,
-        tasks,
-        goals,
-        pomodoros,
-        notes
+      // Get completed items from progress store
+      const dayItems = progressStore.progressItems.filter(item => {
+        if (!item.date) return false
+        const itemDate = new Date(item.date)
+        itemDate.setHours(0, 0, 0, 0)
+        return itemDate.getTime() === date.getTime() && item.status === 'completed'
       })
-    } else {
-      // Generate demo data for local mode
-      const dayTasks = localTasks.value.filter(task => task.dueDate === dateStr && task.completed)
-      const tasks = dayTasks.length
       
-      // Generate some demo activity for variety
-      const randomValue = Math.random()
-      let goals = 0, pomodoros = 0, notes = 0
+      // Count different types of activities
+      goals = dayItems.filter(item => item.type === 'goal').length
+      pomodoros = dayItems.filter(item => item.type === 'focus').length
+      notes = dayItems.filter(item => item.type === 'journal').length
       
-      if (randomValue > 0.7) {
-        goals = Math.floor(Math.random() * 2)
-        pomodoros = Math.floor(Math.random() * 3)
-        notes = Math.floor(Math.random() * 1)
-      }
-      
-      const completions = tasks + goals + pomodoros + notes
-      const level = Math.min(4, Math.floor(completions / 3))
-      
-      data.push({
-        date: dateStr,
-        level,
-        completions,
-        tasks,
-        goals,
-        pomodoros,
-        notes
+      // Get task completions from streaks store
+      const streakData = streaksStore.streaks.filter(streak => {
+        if (!streak.date) return false
+        const streakDate = new Date(streak.date)
+        streakDate.setHours(0, 0, 0, 0)
+        return streakDate.getTime() === date.getTime() && streak.activity_type === 'tasks'
       })
+      
+      // Sum up streak values
+      const streakCompletions = streakData.reduce((sum, streak) => sum + (streak.value || 0), 0)
+      
+      // Use the maximum value between local tasks and streak data
+      tasks = Math.max(tasks, streakCompletions)
     }
+    
+    // For today, update the completion count in storage
+    if (dateStr === today.toISOString().split('T')[0]) {
+      dailyCompletions.value = {
+        ...dailyCompletions.value,
+        [dateStr]: tasks
+      }
+    } else {
+      // For past days, use saved completion count if available
+      tasks = dailyCompletions.value[dateStr] !== undefined ? dailyCompletions.value[dateStr] : tasks
+    }
+    
+    // Calculate level based on task completions (0-4 scale)
+    let level = 0
+    if (tasks > 0) {
+      level = Math.min(4, Math.max(1, Math.ceil(tasks / 2)))
+    }
+    
+    // Add to data array in chronological order
+    data.unshift({
+      date: dateStr,
+      level,
+      completions: tasks,
+      tasks,
+      goals,
+      pomodoros,
+      notes
+    })
   }
   
   return data
 })
 
-// Activity options
-const activities = [
-  { value: 'tasks', label: 'Tasks', icon: 'lucide:clipboard-list', color: '#8b5cf6' },
-  { value: 'focus', label: 'Focus', icon: 'lucide:clock', color: '#f59e0b' },
-  { value: 'journal', label: 'Journal', icon: 'lucide:book-open', color: '#10b981' },
-  { value: 'routines', label: 'Routines', icon: 'lucide:refresh-cw', color: '#ef4444' }
-]
+// Build last 8 months heatmap weeks aligned to Sundays and exclude future dates
+const heatmapWeeks = computed(() => {
+  const today = new Date()
+  const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  // Start from the first day of the month 7 months ago (inclusive makes 8 months including current)
+  const startMonth = new Date(endDate)
+  startMonth.setMonth(startMonth.getMonth() - 7)
+  startMonth.setDate(1)
+  // Align start to previous Sunday
+  const startDate = new Date(startMonth)
+  const dayOfWeek = startDate.getDay() // 0 = Sun
+  startDate.setDate(startDate.getDate() - dayOfWeek)
 
+  // Collect completions per date in visible range first
+  const completionMap = new Map<string, number>()
+  const addCompletions = (d: Date) => {
+    const y = d.getFullYear()
+    const m = d.getMonth() + 1
+    const dd = d.getDate()
+    const iso = `${y}-${String(m).padStart(2, '0')}-${String(dd).padStart(2, '0')}`
+    const comp = activityData.value.find(x => x.date === iso)?.completions ?? 0
+    completionMap.set(iso, comp)
+  }
+
+  const weeks: Array<Array<string | null>> = []
+  let cursor = new Date(startDate)
+  while (cursor <= endDate || cursor.getDay() !== 0) {
+    const week: Array<string | null> = []
+    for (let i = 0; i < 7; i++) {
+      const isFuture = cursor > endDate
+      if (!isFuture) addCompletions(cursor)
+      const y = cursor.getFullYear()
+      const m = cursor.getMonth() + 1
+      const dd = cursor.getDate()
+      const iso = `${y}-${String(m).padStart(2, '0')}-${String(dd).padStart(2, '0')}`
+      week.push(isFuture ? null : iso)
+      cursor.setDate(cursor.getDate() + 1)
+    }
+    weeks.push(week)
+    if (cursor > endDate && cursor.getDay() === 0) break
+    if (weeks.length > 60) break
+  }
+
+  // Build quantile thresholds from completions distribution
+  const values = Array.from(completionMap.values()).sort((a, b) => a - b)
+  const quantile = (p: number): number => {
+    if (values.length === 0) return 0
+    const idx = Math.floor((values.length - 1) * p)
+    const v = values[idx]
+    return typeof v === 'number' && isFinite(v) ? v : 0
+  }
+  const q1: number = quantile(0.25)
+  const q2: number = quantile(0.5)
+  const q3: number = quantile(0.75)
+  const max: number = values.length ? Number(values[values.length - 1]) : 0
+
+  const levelMap = new Map<string, number>()
+  completionMap.forEach((comp, iso) => {
+    const c = typeof comp === 'number' ? comp : 0
+    let level = 0
+    if (c <= 0) level = 0
+    else if (c <= q1) level = 1
+    else if (c <= q2) level = 2
+    else if (c <= q3) level = 3
+    else level = 4
+    // If all values are the same non-zero, put them at mid-level for visibility
+    if (max > 0 && q1 === q2 && q2 === q3) level = 3
+    levelMap.set(iso, level)
+  })
+
+  return { weeks, levelMap, startDate, endDate }
+})
+
+const levelToClass = ['heatmap-none', 'heatmap-low', 'heatmap-medium', 'heatmap-high', 'heatmap-max']
+
+// defineExpose moved to the end of the script setup
+
+const formatDateOrEmpty = (iso?: string | null): string => {
+  if (!iso) return ''
+  const date = new Date(iso)
+  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+const getLevelOrZero = (iso?: string | null): number => {
+  if (!iso) return 0
+  return heatmapWeeks.value.levelMap.get(iso) || 0
+}
+
+// Group weeks by month into contiguous buckets for boxed layout
+const monthGroups = computed(() => {
+  const groups: Array<{ label: string; weeks: Array<Array<string | null>> }> = []
+  const allWeeks = heatmapWeeks.value.weeks
+  let currentLabel = ''
+  let currentWeeks: Array<Array<string | null>> = []
+
+  const getWeekMonthLabel = (week: Array<string | null>): string => {
+    const isoMaybe = week.find(d => d != null) as string | undefined
+    if (!isoMaybe) return ''
+    const iso = String(isoMaybe)
+    const [ys, ms] = iso.split('-')
+    const yy = parseInt(ys || '1970')
+    const mm = (parseInt(ms || '1') - 1)
+    return new Date(yy, mm, 1).toLocaleString(undefined, { month: 'short' })
+  }
+
+  for (const week of allWeeks) {
+    const label = getWeekMonthLabel(week)
+    if (currentLabel === '') {
+      currentLabel = label
+      currentWeeks = [week]
+    } else if (label === currentLabel || label === '') {
+      currentWeeks.push(week)
+    } else {
+      groups.push({ label: currentLabel, weeks: currentWeeks })
+      currentLabel = label
+      currentWeeks = [week]
+    }
+  }
+  if (currentWeeks.length) groups.push({ label: currentLabel, weeks: currentWeeks })
+  return groups
+})
+
+// Selected activity used for stats display
 const selectedActivity = ref<'tasks' | 'focus' | 'journal' | 'routines'>('tasks')
 
 // Activity stats computed from real data
@@ -167,119 +314,31 @@ const loading = computed(() =>
 )
 
 // Task management functions
-const toggleTask = (taskId: number) => {
+const toggleTask = async (taskId: number) => {
   localTasks.value = localTasks.value.map(task => 
     task.id === taskId 
       ? { ...task, completed: !task.completed }
       : task
   )
-}
-
-// Real-time activity tracking functions
-const addActivity = async (type: 'tasks' | 'goals' | 'pomodoros' | 'notes') => {
-  try {
-    // Map to progress item types
-    const typeMap = {
-      'tasks': 'task' as const,
-      'goals': 'goal' as const,
-      'pomodoros': 'focus' as const,
-      'notes': 'journal' as const
-    }
-    
-    const progressType = typeMap[type]
-    const today = new Date().toISOString().split('T')[0]
-    
-    // Create a new progress item
-    await progressStore.createProgressItem({
-      type: progressType,
-      title: `${type.charAt(0).toUpperCase() + type.slice(1)} Activity`,
-      description: `Manual ${type} activity added`,
-      status: 'completed',
-      priority: 'medium',
-      category: 'general',
-      value: 1,
-      date: today,
-      completed_at: new Date().toISOString()
-    })
-    
-    // Also record in streaks for backward compatibility
-    const streakTypeMap = {
-      'tasks': 'tasks' as const,
-      'goals': 'tasks' as const, // Map goals to tasks for now
-      'pomodoros': 'focus' as const,
-      'notes': 'journal' as const
-    }
-    
-    const streakType = streakTypeMap[type]
-    await streaksStore.recordActivity(streakType, 1)
-    
-    console.log(`Added ${type} activity`)
-  } catch (error) {
-    console.error('Error saving activity:', error)
-    // Show error to user
-    alert(`Failed to save activity: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  // Update today's completion count
+  updateTodayCompletion()
+  // Immediately sync with progress store
+  if (authStore.isAuthenticated) {
+    await progressStore.syncWithTasks(localTasks.value)
   }
 }
 
-const removeActivity = async (type: 'tasks' | 'goals' | 'pomodoros' | 'notes') => {
-  const currentValue = todayActivity.value[type]
-  if (currentValue > 0) {
-    try {
-      // Map to streak activity types
-      const activityTypeMap = {
-        'tasks': 'tasks' as const,
-        'goals': 'tasks' as const, // Map goals to tasks for now
-        'pomodoros': 'focus' as const,
-        'notes': 'journal' as const
-      }
-      
-      const streakType = activityTypeMap[type]
-      // For now, we'll just log the removal - in a real app you might want to track negative values
-      console.log(`Removed ${type} activity (current: ${currentValue})`)
-      // Note: This is a simplified approach. In a real app, you'd want to track individual activity entries
-      // and allow removal of specific entries rather than just decrementing
-    } catch (error) {
-      console.error('Error removing activity:', error)
-      alert(`Failed to remove activity: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
-  }
-}
+// Removed manual add/remove controls
 
 // No longer needed since activityData is computed from real data
 
 // LeetCode-style heatmap colors
-const getHeatmapColor = (level: number) => {
-  switch (level) {
-    case 0: return 'heatmap-none'
-    case 1: return 'heatmap-low'
-    case 2: return 'heatmap-medium'
-    case 3: return 'heatmap-high'
-    case 4: return 'heatmap-max'
-    default: return 'heatmap-none'
-  }
-}
 
 // Tooltip state
-const tooltip = ref({
-  visible: false,
-  x: 0,
-  y: 0,
-  date: '',
-  activity: '',
-  tasks: 0,
-  goals: 0,
-  pomodoros: 0,
-  notes: 0
-})
 
 // Helper functions
 const getActiveDays = () => {
   return activityData.value.filter(day => day.level > 0).length
-}
-
-const getAveragePerDay = () => {
-  const totalCompletions = activityData.value.reduce((sum, day) => sum + day.completions, 0)
-  return (totalCompletions / activityData.value.length).toFixed(1)
 }
 
 // Load real data from all stores
@@ -319,6 +378,9 @@ onMounted(async () => {
   // Initialize auth first
   await authStore.initializeAuth()
   
+  // Initialize today's completion
+  updateTodayCompletion()
+  
   // Load data based on authentication status
   if (authStore.isAuthenticated) {
     await loadRealData()
@@ -348,38 +410,25 @@ watch(() => authStore.isAuthenticated, async (isAuthenticated) => {
 })
 
 // Watch for changes in local tasks and sync
-watch(localTasks, () => {
-  syncAllData()
+watch(localTasks, async () => {
+  // Update today's completion count when tasks change
+  updateTodayCompletion()
+  
+  if (authStore.isAuthenticated) {
+    await progressStore.syncWithTasks(localTasks.value)
+  }
 }, { deep: true })
 
 // Watch for changes in goals and sync
-watch(() => goalsStore.goals, () => {
-  syncAllData()
+watch(() => goalsStore.goals, async () => {
+  if (authStore.isAuthenticated) {
+    await progressStore.syncWithGoals(goalsStore.goals)
+  }
 }, { deep: true })
 
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr)
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-  
-  const dayName = dayNames[date.getDay()]
-  const monthName = monthNames[date.getMonth()]
-  const day = date.getDate()
-  const year = date.getFullYear()
-  
-  return `${dayName}, ${monthName} ${day}, ${year}`
-}
+// Removed journal sync - handled separately in Journal page
 
-
-// Get current date for display
-const getCurrentDate = () => {
-  return new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
+// Namespace object for template access
 </script>
 
 <template>
@@ -409,10 +458,14 @@ const getCurrentDate = () => {
             </span>
           </p>
         </div>
-        <div v-if="!authStore.isAuthenticated" class="header-actions">
-          <button class="action-btn" @click="$router.push('/auth')">
+        <div class="header-actions">
+          <button v-if="!authStore.isAuthenticated" class="action-btn" @click="$router.push('/auth')">
             <Icon icon="lucide:log-in" class="btn-icon" />
             Sign In
+          </button>
+          <button v-else class="action-btn danger" @click="authStore.signOut()">
+            <Icon icon="lucide:log-out" class="btn-icon" />
+            Sign Out
           </button>
         </div>
       </div>
@@ -422,8 +475,8 @@ const getCurrentDate = () => {
         <div class="summary-card">
           <Icon icon="lucide:check-circle" class="summary-icon green" />
           <div class="summary-content">
-            <span class="summary-number">{{ todayActivity.tasks + todayActivity.goals + todayActivity.pomodoros + todayActivity.notes }}</span>
-            <span class="summary-label">TODAY'S COMPLETIONS</span>
+            <span class="summary-number">{{ todayActivity.tasks }}</span>
+            <span class="summary-label">TODAY'S COMPLETED TASKS</span>
           </div>
         </div>
         
@@ -552,51 +605,7 @@ const getCurrentDate = () => {
       </div>
     </div>
 
-    <!-- Activity Controls -->
-    <div class="activity-controls">
-      <h3 class="controls-title">
-        <Icon icon="lucide:plus-circle" class="title-icon" />
-        Track Today's Activities
-      </h3>
-      <div class="controls-grid">
-        <div class="control-item">
-          <Icon icon="lucide:clipboard-list" class="control-icon" />
-          <span class="control-label">Tasks</span>
-          <div class="control-buttons">
-            <button class="control-btn minus" @click="removeActivity('tasks')" :disabled="todayActivity.tasks === 0">-</button>
-            <span class="control-count">{{ todayActivity.tasks }}</span>
-            <button class="control-btn plus" @click="addActivity('tasks')">+</button>
-          </div>
-        </div>
-        <div class="control-item">
-          <Icon icon="lucide:target" class="control-icon" />
-          <span class="control-label">Goals</span>
-          <div class="control-buttons">
-            <button class="control-btn minus" @click="removeActivity('goals')" :disabled="todayActivity.goals === 0">-</button>
-            <span class="control-count">{{ todayActivity.goals }}</span>
-            <button class="control-btn plus" @click="addActivity('goals')">+</button>
-          </div>
-        </div>
-        <div class="control-item">
-          <Icon icon="lucide:clock" class="control-icon" />
-          <span class="control-label">Focus Sessions</span>
-          <div class="control-buttons">
-            <button class="control-btn minus" @click="removeActivity('pomodoros')" :disabled="todayActivity.pomodoros === 0">-</button>
-            <span class="control-count">{{ todayActivity.pomodoros }}</span>
-            <button class="control-btn plus" @click="addActivity('pomodoros')">+</button>
-          </div>
-        </div>
-        <div class="control-item">
-          <Icon icon="lucide:book-open" class="control-icon" />
-          <span class="control-label">Journal Entries</span>
-          <div class="control-buttons">
-            <button class="control-btn minus" @click="removeActivity('notes')" :disabled="todayActivity.notes === 0">-</button>
-            <span class="control-count">{{ todayActivity.notes }}</span>
-            <button class="control-btn plus" @click="addActivity('notes')">+</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    
 
     <!-- Heatmap Section -->
     <div class="heatmap-section">
@@ -610,20 +619,6 @@ const getCurrentDate = () => {
       <!-- Heatmap will be rendered here -->
       <div class="heatmap-container">
         <div class="calendar-heatmap">
-          <div class="month-labels">
-            <div class="month-label">Jan</div>
-            <div class="month-label">Feb</div>
-            <div class="month-label">Mar</div>
-            <div class="month-label">Apr</div>
-            <div class="month-label">May</div>
-            <div class="month-label">Jun</div>
-            <div class="month-label">Jul</div>
-            <div class="month-label">Aug</div>
-            <div class="month-label">Sep</div>
-            <div class="month-label">Oct</div>
-            <div class="month-label">Nov</div>
-            <div class="month-label">Dec</div>
-          </div>
           <div class="calendar-grid">
             <div class="day-labels">
               <div class="day-label">S</div>
@@ -634,81 +629,36 @@ const getCurrentDate = () => {
               <div class="day-label">F</div>
               <div class="day-label">S</div>
             </div>
-            <div class="heatmap-grid">
+            <div class="months-wrap">
               <div
-                v-for="(day, index) in activityData"
-                :key="index"
-                class="heatmap-day"
-                :class="getHeatmapColor(day.level)"
-                :title="`${formatDate(day.date)}: ${day.completions} completions`"
-              ></div>
+                v-for="(group, gIdx) in monthGroups"
+                :key="String(`g-${gIdx}`)"
+                class="month-group"
+              >
+                <div class="month-grid">
+                  <div 
+                    v-for="(week, wIdx) in group.weeks" 
+                    :key="String(`gw-${gIdx}-${wIdx}`)" 
+                    class="heatmap-week"
+                  >
+                    <div
+                      v-for="(iso, dIdx) in week"
+                      :key="String(`gd-${gIdx}-${wIdx}-${dIdx}`)"
+                      class="heatmap-day"
+                      :class="[levelToClass[getLevelOrZero(iso)], { 'is-future': iso === null }]"
+                      :title="iso ? `${formatDateOrEmpty(iso)}: ${getLevelOrZero(iso)} completions` : ''"
+                    ></div>
+                  </div>
+                </div>
+                <div class="month-title">{{ group.label }}</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- All Activities Overview -->
-    <div class="all-activities">
-      <div class="section-header">
-        <h3 class="section-title">All Activities Overview</h3>
-        <p class="section-subtitle">Track your progress across all productivity areas</p>
-      </div>
-      
-      <div class="activities-grid">
-        <div
-          v-for="activity in activities"
-          :key="activity.value"
-          class="activity-card"
-          :style="{ '--activity-color': activity.color }"
-        >
-          <div class="activity-header">
-            <div class="activity-info">
-              <Icon :icon="activity.icon" class="activity-icon" />
-              <span class="activity-name">{{ activity.label }}</span>
-            </div>
-            <div class="activity-streak">
-              <span class="streak-number">{{ currentStats.current }}</span>
-              <span class="streak-label">day streak</span>
-            </div>
-          </div>
-          
-          <div class="activity-stats">
-            <div class="stat-item">
-              <span class="stat-label">Longest</span>
-              <span class="stat-value">{{ currentStats.longest }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Total</span>
-              <span class="stat-value">{{ currentStats.total }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Last</span>
-              <span class="stat-value">
-                {{ currentStats.last_activity ? 
-                   new Date(currentStats.last_activity).toLocaleDateString() : 
-                   'Never' }}
-              </span>
-            </div>
-          </div>
-          
-          <div class="activity-progress">
-            <div class="progress-bar">
-              <div 
-                class="progress-fill"
-                :style="{ 
-                  width: `${Math.min((currentStats.current / 30) * 100, 100)}%`,
-                  backgroundColor: activity.color
-                }"
-              ></div>
-            </div>
-            <span class="progress-text">
-              {{ Math.min(currentStats.current, 30) }}/30 days
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+    
     </div> <!-- End main content -->
   </div>
 </template>
@@ -806,6 +756,16 @@ const getCurrentDate = () => {
   background: linear-gradient(135deg, #7c3aed, #9333ea);
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+}
+
+.action-btn.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: #fff;
+}
+
+.action-btn.danger:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
 }
 
 .btn-icon {
@@ -1144,36 +1104,37 @@ const getCurrentDate = () => {
   position: relative;
   overflow-x: auto;
   padding: 0;
+  /* Shared sizing variables for alignment */
+  --hm-cell: 12px;
+  --hm-gap: 2px;
 }
 
 .month-labels {
   position: relative;
   height: 20px;
   margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-width: 800px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--hm-cell);
+  column-gap: var(--hm-gap);
 }
 
 .month-label {
   font-size: 0.8rem;
   color: #fff;
   font-weight: 500;
-  flex: 1;
-  text-align: center;
+  text-align: left;
 }
 
 .calendar-grid {
   display: flex;
-  gap: 2px;
-  min-width: 800px;
+  gap: var(--hm-gap);
 }
 
 .day-labels {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--hm-gap);
   margin-right: 8px;
   padding-top: 0;
   width: 16px;
@@ -1192,52 +1153,60 @@ const getCurrentDate = () => {
 
 .heatmap-grid {
   display: grid;
-  grid-template-columns: repeat(53, 1fr);
-  gap: 2px;
-  flex: 1;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--hm-cell);
+  gap: var(--hm-gap);
+}
+
+.heatmap-week {
+  display: grid;
+  grid-template-rows: repeat(7, var(--hm-cell));
+  gap: var(--hm-gap);
 }
 
 .heatmap-day {
-  width: 12px;
-  height: 12px;
+  width: var(--hm-cell);
+  height: var(--hm-cell);
   border-radius: 2px;
-  transition: all 0.2s ease;
+  transition: transform 0.1s ease;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.heatmap-day.is-future {
+  visibility: hidden; /* don't render future cells */
+  pointer-events: none;
 }
 
 .heatmap-day:hover {
-  transform: scale(1.2);
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
-  z-index: 10;
-  position: relative;
+  transform: scale(1.15);
 }
 
 /* LeetCode-style heatmap colors */
 .heatmap-none {
   background: #161b22;
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .heatmap-low {
   background: #0e4429;
-  border-color: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.25);
 }
 
 .heatmap-medium {
   background: #006d32;
-  border-color: rgba(34, 197, 94, 0.5);
+  border-color: rgba(34, 197, 94, 0.45);
 }
 
 .heatmap-high {
   background: #26a641;
-  border-color: rgba(34, 197, 94, 0.7);
+  border-color: rgba(34, 197, 94, 0.65);
 }
 
 .heatmap-max {
   background: #39d353;
-  border-color: rgba(34, 197, 94, 0.9);
-  box-shadow: 0 0 4px rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.85);
+  box-shadow: 0 0 2px rgba(34, 197, 94, 0.3);
 }
 
 .heatmap-tooltip {
@@ -2066,5 +2035,42 @@ const getCurrentDate = () => {
     justify-content: center;
   }
 }
+
+.months-wrap {
+  display: flex;
+  gap: 12px;
+}
+
+.month-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.month-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--hm-cell);
+  gap: var(--hm-gap);
+  padding: 6px;
+  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--color-surface), transparent 30%);
+  backdrop-filter: blur(2px);
+}
+
+.month-title {
+  font-size: 0.9rem;
+  color: var(--color-text, #e2e8f0);
+  font-weight: 600;
+}
+
+/* Green palette like GitHub/LeetCode */
+.heatmap-none { background: #161b22; border-color: rgba(255, 255, 255, 0.06); }
+.heatmap-low { background: #0e4429; border-color: rgba(34, 197, 94, 0.25); }
+.heatmap-medium { background: #006d32; border-color: rgba(34, 197, 94, 0.45); }
+.heatmap-high { background: #26a641; border-color: rgba(34, 197, 94, 0.65); }
+.heatmap-max { background: #39d353; border-color: rgba(34, 197, 94, 0.85); box-shadow: 0 0 2px rgba(34, 197, 94, 0.3); }
 </style>
 

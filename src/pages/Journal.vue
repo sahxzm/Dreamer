@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useLocalStorage } from '@/utils/storage'
 import { Icon } from '@iconify/vue'
 
 // Journal state
@@ -19,8 +20,8 @@ const newEntry = ref({
   date: new Date().toISOString().split('T')[0]
 })
 
-// Journal entries - will be loaded from real data source
-const journalEntries = ref<Array<{
+// Journal entries persisted locally
+const journalEntries = useLocalStorage<Array<{
   id: number
   title: string
   content: string
@@ -28,7 +29,7 @@ const journalEntries = ref<Array<{
   tags: string[]
   date: string
   createdAt: string
-}>>([])
+}>>('journal:entries', [])
 
 // Reflection templates
 const reflectionTemplates = ref([

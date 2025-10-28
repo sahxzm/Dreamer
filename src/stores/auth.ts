@@ -31,13 +31,14 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       // Listen for auth changes
-      supabase.auth.onAuthStateChange((_event, session) => {
-        session.value = session
-        user.value = session?.user ?? null
+      supabase.auth.onAuthStateChange((_event, newSession) => {
+        // Update reactive refs with latest session
+        session.value = newSession || null
+        user.value = newSession?.user ?? null
         
         // Save to localStorage for auto-login
-        if (session) {
-          localStorage.setItem('dreamer_session', JSON.stringify(session))
+        if (newSession) {
+          localStorage.setItem('dreamer_session', JSON.stringify(newSession))
         } else {
           localStorage.removeItem('dreamer_session')
         }
@@ -83,6 +84,16 @@ export const useAuthStore = defineStore('auth', () => {
       })
 
       if (error) throw error
+      // Immediately hydrate local auth state; do not rely solely on onAuthStateChange
+      if (data?.session) {
+        session.value = data.session
+        // Prefer explicit user if provided, otherwise derive from session
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const signedInUser = (data as any).user ?? data.session.user
+        user.value = signedInUser ?? null
+        // Persist for auto-login
+        localStorage.setItem('dreamer_session', JSON.stringify(data.session))
+      }
       return { data, error: null }
     } catch (error) {
       console.error('Sign in error:', error)

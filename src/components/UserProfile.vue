@@ -232,6 +232,8 @@ defineExpose({
   cursor: pointer;
   transition: all 0.2s ease;
   backdrop-filter: blur(2px);
+  width: 100%;
+  text-align: left;
 }
 
 .profile-btn:hover {

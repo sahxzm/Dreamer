@@ -251,14 +251,6 @@ onUnmounted(() => {
           <div class="stat-label">Total Focus</div>
         </div>
       </div>
-      
-      <div class="stat-item">
-        <Icon icon="lucide:flame" class="stat-icon" />
-        <div class="stat-content">
-          <div class="stat-number">7</div>
-          <div class="stat-label">Day Streak</div>
-        </div>
-      </div>
     </div>
   </div>
 </template>

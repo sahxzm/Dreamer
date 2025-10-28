@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useLocalStorage } from '@/utils/storage'
 import { Icon } from '@iconify/vue'
 
 // Goal state
@@ -9,8 +10,8 @@ const newGoalCategory = ref('personal')
 const newGoalDeadline = ref('')
 const newGoalPriority = ref('medium')
 
-// Goals data - will be loaded from real data source
-const goals = ref<Array<{
+// Goals data persisted locally
+const goals = useLocalStorage<Array<{
   id: number
   text: string
   category: string
@@ -21,7 +22,7 @@ const goals = ref<Array<{
   type: string
   createdAt: string
   completedAt: string | null
-}>>([])
+}>>('goals:local', [])
 
 // Computed properties
 const miniGoals = computed(() => goals.value.filter(g => g.type === 'mini'))
