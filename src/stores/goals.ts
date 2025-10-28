@@ -1,12 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { supabase } from '../api/supabase'
-import { useAuthStore } from './auth'
 import { useLocalStorage } from '../utils/storage'
 
 export interface Goal {
   id: string
-  user_id: string
   title: string
   description: string
   category: 'health' | 'work' | 'learning' | 'personal' | 'fitness' | 'creative'
@@ -22,6 +19,7 @@ export interface Goal {
 }
 
 export interface GoalProgress {
+  id: string
   goal_id: string
   date: string
   value: number
@@ -36,7 +34,6 @@ export const useGoalsStore = defineStore('goals', () => {
   const loading = ref(false)
 
   // Getters
-  const authStore = useAuthStore()
 
   const activeGoals = computed(() => 
     goals.value.filter(goal => goal.status === 'active')
@@ -111,81 +108,29 @@ export const useGoalsStore = defineStore('goals', () => {
 
   // Actions
   const fetchGoals = async () => {
-    if (!authStore.user) {
-      // If no user, try to load from local storage
-      const storedGoals = localStorage.getItem('goals:items')
-      if (storedGoals) {
-        try {
-          goals.value = JSON.parse(storedGoals)
-        } catch (error) {
-          console.error('Error parsing stored goals:', error)
-        }
-      }
-      return
-    }
-    
-    loading.value = true
-    try {
-      const { data, error } = await supabase
-        .from('goals')
-        .select('*')
-        .eq('user_id', authStore.user.id)
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      
-      goals.value = data || []
-    } catch (error) {
-      console.error('Error fetching goals:', error)
-      // Fallback to local storage if online fetch fails
-      const storedGoals = localStorage.getItem('goals:items')
-      if (storedGoals) {
-        try {
-          goals.value = JSON.parse(storedGoals)
-        } catch (parseError) {
-          console.error('Error parsing stored goals:', parseError)
-        }
-      }
-    } finally {
-      loading.value = false
-    }
+    // Goals are already loaded from local storage via useLocalStorage
+    // This function is kept for compatibility but doesn't need to do anything
+    return
   }
 
   const fetchGoalProgress = async () => {
-    if (!authStore.isAuthenticated) return
-
-    try {
-      const { data, error } = await supabase
-        .from('goal_progress')
-        .select('*')
-        .eq('user_id', authStore.user?.id)
-        .order('date', { ascending: false })
-
-      if (error) throw error
-      goalProgress.value = data || []
-    } catch (error) {
-      console.error('Error fetching goal progress:', error)
-    }
+    // Goal progress is already loaded from local storage via useLocalStorage
+    // This function is kept for compatibility but doesn't need to do anything
+    return
   }
 
-  const createGoal = async (goalData: Omit<Goal, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!authStore.isAuthenticated) return { data: null, error: new Error('Not authenticated') }
-
+  const createGoal = async (goalData: Omit<Goal, 'id' | 'created_at' | 'updated_at'>) => {
     loading.value = true
     try {
-      const { data, error } = await supabase
-        .from('goals')
-        .insert({
-          ...goalData,
-          user_id: authStore.user?.id
-        })
-        .select()
-        .single()
-
-      if (error) throw error
+      const newGoal: Goal = {
+        ...goalData,
+        id: `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
       
-      goals.value.unshift(data)
-      return { data, error: null }
+      goals.value.unshift(newGoal)
+      return { data: newGoal, error: null }
     } catch (error) {
       console.error('Error creating goal:', error)
       return { data: null, error }
@@ -195,29 +140,18 @@ export const useGoalsStore = defineStore('goals', () => {
   }
 
   const updateGoal = async (goalId: string, updates: Partial<Goal>) => {
-    if (!authStore.isAuthenticated) return { data: null, error: new Error('Not authenticated') }
-
     loading.value = true
     try {
-      const { data, error } = await supabase
-        .from('goals')
-        .update({
+      const index = goals.value.findIndex(goal => goal.id === goalId)
+      if (index !== -1 && goals.value[index]) {
+        goals.value[index] = {
+          ...goals.value[index],
           ...updates,
           updated_at: new Date().toISOString()
-        })
-        .eq('id', goalId)
-        .eq('user_id', authStore.user?.id)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      const index = goals.value.findIndex(goal => goal.id === goalId)
-      if (index !== -1) {
-        goals.value[index] = data
+        }
+        return { data: goals.value[index], error: null }
       }
-
-      return { data, error: null }
+      return { data: null, error: new Error('Goal not found') }
     } catch (error) {
       console.error('Error updating goal:', error)
       return { data: null, error }
@@ -227,19 +161,11 @@ export const useGoalsStore = defineStore('goals', () => {
   }
 
   const deleteGoal = async (goalId: string) => {
-    if (!authStore.isAuthenticated) return { data: null, error: new Error('Not authenticated') }
-
     loading.value = true
     try {
-      const { error } = await supabase
-        .from('goals')
-        .delete()
-        .eq('id', goalId)
-        .eq('user_id', authStore.user?.id)
-
-      if (error) throw error
-
       goals.value = goals.value.filter(goal => goal.id !== goalId)
+      // Also remove related progress entries
+      goalProgress.value = goalProgress.value.filter(progress => progress.goal_id !== goalId)
       return { data: null, error: null }
     } catch (error) {
       console.error('Error deleting goal:', error)
@@ -250,51 +176,42 @@ export const useGoalsStore = defineStore('goals', () => {
   }
 
   const recordProgress = async (goalId: string, value: number, notes?: string) => {
-    if (!authStore.isAuthenticated) return { data: null, error: new Error('Not authenticated') }
-
     try {
       const today = new Date().toISOString().split('T')[0]
+      if (!today) {
+        throw new Error('Unable to get current date')
+      }
 
       // Check if progress already exists for today
-      const { data: existingProgress } = await supabase
-        .from('goal_progress')
-        .select('*')
-        .eq('goal_id', goalId)
-        .eq('date', today)
-        .single()
+      const existingProgressIndex = goalProgress.value.findIndex(
+        progress => progress.goal_id === goalId && progress.date === today
+      )
 
       let progressData
-      if (existingProgress) {
+      if (existingProgressIndex !== -1) {
         // Update existing progress
-        const { data, error } = await supabase
-          .from('goal_progress')
-          .update({
+        const existingProgress = goalProgress.value[existingProgressIndex]
+        if (existingProgress) {
+          goalProgress.value[existingProgressIndex] = {
+            ...existingProgress,
             value: existingProgress.value + value,
             notes: notes || existingProgress.notes,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingProgress.id)
-          .select()
-          .single()
-
-        if (error) throw error
-        progressData = data
+            created_at: existingProgress.created_at
+          }
+          progressData = goalProgress.value[existingProgressIndex]
+        }
       } else {
         // Create new progress
-        const { data, error } = await supabase
-          .from('goal_progress')
-          .insert({
-            goal_id: goalId,
-            user_id: authStore.user?.id,
-            date: today,
-            value,
-            notes
-          })
-          .select()
-          .single()
-
-        if (error) throw error
-        progressData = data
+        const newProgress: GoalProgress = {
+          id: `progress_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          goal_id: goalId,
+          date: today,
+          value,
+          notes,
+          created_at: new Date().toISOString()
+        }
+        goalProgress.value.unshift(newProgress)
+        progressData = newProgress
       }
 
       // Update goal current value
@@ -311,10 +228,6 @@ export const useGoalsStore = defineStore('goals', () => {
           })
         }
       }
-
-      // Refresh data
-      await fetchGoalProgress()
-      await fetchGoals()
 
       return { data: progressData, error: null }
     } catch (error) {

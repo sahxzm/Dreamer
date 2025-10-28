@@ -1,12 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { supabase } from '../api/supabase'
-import { useAuthStore } from './auth'
 import { useLocalStorage } from '../utils/storage'
 
 export interface ProgressItem {
   id: string
-  user_id: string
   type: 'task' | 'goal' | 'focus' | 'journal' | 'routine'
   title: string
   description?: string
@@ -39,7 +36,6 @@ export const useProgressStore = defineStore('progress', () => {
   const lastSync = useLocalStorage<string>('progress:lastSync', '')
 
   // Getters
-  const authStore = useAuthStore()
 
   const today = computed(() => new Date().toISOString().split('T')[0])
   const thisWeek = computed(() => {
@@ -132,76 +128,22 @@ export const useProgressStore = defineStore('progress', () => {
 
   // Actions
   const fetchProgress = async () => {
-    if (!authStore.isAuthenticated) {
-      // Load from local storage if not authenticated
-      const stored = localStorage.getItem('progress:items')
-      if (stored) {
-        try {
-          progressItems.value = JSON.parse(stored)
-        } catch (error) {
-          console.error('Error parsing stored progress:', error)
-        }
-      }
-      return
-    }
-
-    loading.value = true
-    try {
-      const { data, error } = await supabase
-        .from('progress_items')
-        .select('*')
-        .eq('user_id', authStore.user?.id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      
-      progressItems.value = data || []
-      lastSync.value = new Date().toISOString()
-    } catch (error) {
-      console.error('Error fetching progress:', error)
-      // Fallback to local storage
-      const stored = localStorage.getItem('progress:items')
-      if (stored) {
-        try {
-          progressItems.value = JSON.parse(stored)
-        } catch (parseError) {
-          console.error('Error parsing stored progress:', parseError)
-        }
-      }
-    } finally {
-      loading.value = false
-    }
+    // Progress items are already loaded from local storage via useLocalStorage
+    // This function is kept for compatibility but doesn't need to do anything
+    return
   }
 
-  const createProgressItem = async (itemData: Omit<ProgressItem, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!authStore.isAuthenticated) {
-      // Create locally if not authenticated
+  const createProgressItem = async (itemData: Omit<ProgressItem, 'id' | 'created_at' | 'updated_at'>) => {
+    loading.value = true
+    try {
       const newItem: ProgressItem = {
         ...itemData,
-        id: `local_${Date.now()}`,
-        user_id: 'local',
+        id: `progress_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
       progressItems.value.unshift(newItem)
       return { data: newItem, error: null }
-    }
-
-    loading.value = true
-    try {
-      const { data, error } = await supabase
-        .from('progress_items')
-        .insert({
-          ...itemData,
-          user_id: authStore.user?.id
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      
-      progressItems.value.unshift(data)
-      return { data, error: null }
     } catch (error) {
       console.error('Error creating progress item:', error)
       return { data: null, error }
@@ -211,8 +153,8 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   const updateProgressItem = async (itemId: string, updates: Partial<ProgressItem>) => {
-    if (!authStore.isAuthenticated) {
-      // Update locally if not authenticated
+    loading.value = true
+    try {
       const index = progressItems.value.findIndex(item => item.id === itemId)
       if (index !== -1 && progressItems.value[index]) {
         progressItems.value[index] = {
@@ -223,29 +165,6 @@ export const useProgressStore = defineStore('progress', () => {
         return { data: progressItems.value[index], error: null }
       }
       return { data: null, error: new Error('Item not found') }
-    }
-
-    loading.value = true
-    try {
-      const { data, error } = await supabase
-        .from('progress_items')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', itemId)
-        .eq('user_id', authStore.user?.id)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      const index = progressItems.value.findIndex(item => item.id === itemId)
-      if (index !== -1) {
-        progressItems.value[index] = data
-      }
-
-      return { data, error: null }
     } catch (error) {
       console.error('Error updating progress item:', error)
       return { data: null, error }
@@ -262,22 +181,8 @@ export const useProgressStore = defineStore('progress', () => {
   }
 
   const deleteProgressItem = async (itemId: string) => {
-    if (!authStore.isAuthenticated) {
-      // Delete locally if not authenticated
-      progressItems.value = progressItems.value.filter(item => item.id !== itemId)
-      return { data: null, error: null }
-    }
-
     loading.value = true
     try {
-      const { error } = await supabase
-        .from('progress_items')
-        .delete()
-        .eq('id', itemId)
-        .eq('user_id', authStore.user?.id)
-
-      if (error) throw error
-
       progressItems.value = progressItems.value.filter(item => item.id !== itemId)
       return { data: null, error: null }
     } catch (error) {
@@ -331,7 +236,7 @@ export const useProgressStore = defineStore('progress', () => {
 
       if (!existingItem) {
         // Create new progress item for goal
-        const goalData: Omit<ProgressItem, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
+        const goalData: Omit<ProgressItem, 'id' | 'created_at' | 'updated_at'> = {
           type: 'goal',
           title: goal.title,
           description: goal.description,
@@ -359,15 +264,9 @@ export const useProgressStore = defineStore('progress', () => {
 
   // Auto-sync when data changes
   const startAutoSync = () => {
-    // Sync every 30 seconds
-    const syncInterval = setInterval(async () => {
-      if (authStore.isAuthenticated) {
-        await fetchProgress()
-      }
-    }, 30000)
-
-    // Cleanup on unmount
-    return () => clearInterval(syncInterval)
+    // No longer needed since we're using local storage only
+    // This function is kept for compatibility but doesn't do anything
+    return () => {}
   }
 
   return {

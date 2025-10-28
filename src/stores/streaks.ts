@@ -1,12 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { supabase } from '../api/supabase'
-import { useAuthStore } from './auth'
 import { useLocalStorage } from '../utils/storage'
 
 export interface StreakData {
   id: string
-  user_id: string
   activity_type: 'tasks' | 'focus' | 'journal' | 'routines'
   date: string
   value: number
@@ -28,7 +25,6 @@ export const useStreaksStore = defineStore('streaks', () => {
   const heatmapData = useLocalStorage<Record<string, number>>('streaks:heatmap', {})
 
   // Getters
-  const authStore = useAuthStore()
 
   const getStreakStats = computed(() => {
     const stats: Record<string, StreakStats> = {
@@ -110,7 +106,7 @@ export const useStreaksStore = defineStore('streaks', () => {
         current: currentStreak,
         longest: longestStreak,
         total: activityStreaks.length,
-        last_activity: sortedStreaks.length > 0 ? sortedStreaks[sortedStreaks.length - 1].date : null
+        last_activity: sortedStreaks.length > 0 ? sortedStreaks[sortedStreaks.length - 1]?.date || null : null
       }
     })
 
@@ -149,122 +145,49 @@ export const useStreaksStore = defineStore('streaks', () => {
 
   // Actions
   const fetchStreaks = async () => {
-    // Check if user is authenticated
-    if (!authStore.user?.id) {
-      console.warn('Cannot fetch streaks: User not authenticated')
-      return
-    }
-
-    loading.value = true
-    try {
-      console.log('Fetching streaks for user:', authStore.user.id)
-      
-      const { data, error } = await supabase
-        .from('streaks')
-        .select('*')
-        .eq('user_id', authStore.user.id)
-        .order('date', { ascending: false })
-
-      if (error) {
-        console.error('Supabase error:', error)
-        throw new Error(`Failed to fetch streaks: ${error.message}`)
-      }
-      
-      console.log('Fetched streaks:', data)
-      
-      if (data) {
-        streaks.value = data
-        updateHeatmapData()
-      }
-    } catch (error) {
-      console.error('Error in fetchStreaks:', error)
-      // Optionally show error to user
-      throw error // Re-throw to allow components to handle the error
-    } finally {
-      loading.value = false
-    }
+    // Streaks are already loaded from local storage via useLocalStorage
+    // This function is kept for compatibility but doesn't need to do anything
+    return
   }
 
   const recordActivity = async (
     activityType: 'tasks' | 'focus' | 'journal' | 'routines',
     value: number = 1
   ) => {
-    // Verify user is authenticated
-    if (!authStore.user?.id) {
-      const error = new Error('Cannot record activity: User not authenticated')
-      console.warn(error.message)
-      throw error
-    }
-
     const today = new Date().toISOString().split('T')[0]
+    if (!today) {
+      throw new Error('Unable to get current date')
+    }
     
     try {
-      console.log(`Recording activity: ${activityType} with value ${value} for user ${authStore.user.id}`)
+      console.log(`Recording activity: ${activityType} with value ${value}`)
       
       // Check if activity already exists for today
-      const { data: existing, error: fetchError } = await supabase
-        .from('streaks')
-        .select('*')
-        .eq('user_id', authStore.user.id)
-        .eq('activity_type', activityType)
-        .eq('date', today)
-        .single()
+      const existingIndex = streaks.value.findIndex(
+        streak => streak.activity_type === activityType && streak.date === today
+      )
 
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error checking for existing activity:', fetchError)
-        throw new Error(`Failed to check existing activity: ${fetchError.message}`)
-      }
-
-      if (existing) {
+      if (existingIndex !== -1) {
         // Update existing record
-        console.log('Updating existing activity record:', existing.id)
-        const { data, error: updateError } = await supabase
-          .from('streaks')
-          .update({ 
-            value: (existing.value || 0) + value,
+        const existingStreak = streaks.value[existingIndex]
+        if (existingStreak) {
+          streaks.value[existingIndex] = {
+            ...existingStreak,
+            value: (existingStreak.value || 0) + value,
             updated_at: new Date().toISOString()
-          })
-          .eq('id', existing.id)
-          .select()
-          .single()
-
-        if (updateError) {
-          console.error('Update error:', updateError)
-          throw new Error(`Failed to update activity: ${updateError.message}`)
-        }
-        
-        if (data) {
-          const index = streaks.value.findIndex(s => s.id === data.id)
-          if (index !== -1) {
-            streaks.value[index] = data
-          } else {
-            streaks.value = [data, ...streaks.value]
           }
         }
       } else {
         // Create new record
-        console.log('Creating new activity record')
-        const { data, error: insertError } = await supabase
-          .from('streaks')
-          .insert([
-            {
-              user_id: authStore.user.id,
-              activity_type: activityType,
-              date: today,
-              value: value
-            }
-          ])
-          .select()
-          .single()
-
-        if (insertError) {
-          console.error('Insert error:', insertError)
-          throw new Error(`Failed to create activity: ${insertError.message}`)
+        const newStreak: StreakData = {
+          id: `streak_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          activity_type: activityType,
+          date: today,
+          value: value,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }
-        
-        if (data) {
-          streaks.value = [data, ...streaks.value]
-        }
+        streaks.value.unshift(newStreak)
       }
 
       updateHeatmapData()
