@@ -287,15 +287,15 @@ defineExpose({
 }
 
 .modal-container {
-  background: rgba(15, 15, 25, 0.95);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 20px;
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
   backdrop-filter: blur(2px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
 .modal-header {
@@ -309,10 +309,7 @@ defineExpose({
 .modal-title {
   font-size: 1.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--color-text);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -320,7 +317,7 @@ defineExpose({
 
 .title-icon {
   font-size: 1.25rem;
-  color: #8b5cf6;
+  color: var(--color-primary);
 }
 
 .close-btn {
@@ -329,18 +326,18 @@ defineExpose({
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .close-btn:hover {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: rgba(139, 92, 246, 0.4);
-  color: #e2e8f0;
+  background: color-mix(in oklab, var(--color-surface), transparent 10%);
+  border-color: color-mix(in oklab, var(--color-border), var(--color-primary) 20%);
+  color: var(--color-text);
 }
 
 .close-icon {
@@ -363,15 +360,15 @@ defineExpose({
 }
 
 .message.error {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
+  background: color-mix(in oklab, #ef4444, transparent 90%);
+  border: 1px solid color-mix(in oklab, #ef4444, transparent 70%);
+  color: color-mix(in oklab, #ef4444, white 30%);
 }
 
 .message.success {
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  color: #86efac;
+  background: color-mix(in oklab, #22c55e, transparent 90%);
+  border: 1px solid color-mix(in oklab, #22c55e, transparent 70%);
+  color: color-mix(in oklab, #22c55e, white 30%);
 }
 
 .message-icon {
@@ -395,27 +392,27 @@ defineExpose({
 .form-label {
   font-size: 14px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--color-text);
 }
 
 .form-input {
   padding: 12px 16px;
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  color: #e2e8f0;
+  color: var(--color-text);
   font-size: 14px;
   transition: all 0.2s ease;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+  border-color: color-mix(in oklab, var(--color-primary), transparent 30%);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary), transparent 92%);
 }
 
 .form-input::placeholder {
-  color: #64748b;
+  color: var(--color-text-secondary);
 }
 
 .submit-btn {
@@ -424,7 +421,7 @@ defineExpose({
   justify-content: center;
   gap: 8px;
   padding: 16px 24px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   border: none;
   border-radius: 12px;
   color: #fff;
@@ -436,9 +433,9 @@ defineExpose({
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  filter: brightness(1.05);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .submit-btn:disabled {
@@ -475,13 +472,13 @@ defineExpose({
   content: '';
   flex: 1;
   height: 1px;
-  background: rgba(139, 92, 246, 0.2);
+  background: var(--color-border);
 }
 
 .divider-text {
   padding: 0 16px;
   font-size: 14px;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
@@ -497,10 +494,10 @@ defineExpose({
   justify-content: center;
   gap: 8px;
   padding: 12px 16px;
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  background: rgba(15, 15, 25, 0.6);
-  color: #e2e8f0;
+  background: var(--color-surface);
+  color: var(--color-text);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -508,8 +505,8 @@ defineExpose({
 }
 
 .oauth-btn:hover:not(:disabled) {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: rgba(139, 92, 246, 0.4);
+  background: color-mix(in oklab, var(--color-surface), transparent 8%);
+  border-color: color-mix(in oklab, var(--color-border), var(--color-primary) 20%);
   transform: translateY(-1px);
 }
 
@@ -540,19 +537,19 @@ defineExpose({
 .mode-switcher {
   text-align: center;
   padding-top: 20px;
-  border-top: 1px solid rgba(139, 92, 246, 0.1);
+  border-top: 1px solid var(--color-border);
 }
 
 .switch-text {
   font-size: 14px;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   margin-right: 8px;
 }
 
 .switch-btn {
   background: none;
   border: none;
-  color: #8b5cf6;
+  color: var(--color-primary);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -561,7 +558,7 @@ defineExpose({
 }
 
 .switch-btn:hover {
-  color: #a855f7;
+  color: color-mix(in oklab, var(--color-primary), white 10%);
 }
 
 /* Responsive Design */

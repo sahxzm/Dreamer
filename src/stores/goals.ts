@@ -13,6 +13,13 @@ export interface Goal {
   current_value: number
   unit: string
   target_date: string
+  start_date?: string
+  milestones?: Array<{
+    id: string
+    title: string
+    completed: boolean
+    due_date?: string
+  }>
   created_at: string
   updated_at: string
   completed_at?: string

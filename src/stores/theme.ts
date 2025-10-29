@@ -1,154 +1,80 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-export interface Theme {
+export interface ThemePreview {
   name: string
   primary: string
   secondary: string
-  background: string
-  surface: string
-  text: string
-  textSecondary: string
-  border: string
-  accent: string
 }
 
 export interface Background {
   name: string
-  type: 'gradient' | 'image' | 'solid'
+  type: 'image'
   value: string
   preview: string
 }
 
+type Mode = 'light' | 'dark'
+type ThemeClass = 'default' | 'batman' | 'hello-kitty' | 'spiderman'
+
 export const useThemeStore = defineStore('theme', () => {
-  // State
-  const currentTheme = ref<string>('dark')
+  // State (class-based theming)
+  const currentMode = ref<Mode>('dark')
+  const currentThemeClass = ref<ThemeClass>('default')
   const currentBackground = ref<string>('default')
   const customBackgrounds = ref<Background[]>([])
 
-  // Predefined themes
-  const themes: Record<string, Theme> = {
-    dark: {
-      name: 'Dark',
-      primary: '#8b5cf6',
-      secondary: '#a855f7',
-      background: '#0f0f17',
-      surface: 'rgba(15, 15, 25, 0.4)',
-      text: '#e2e8f0',
-      textSecondary: '#94a3b8',
-      border: 'rgba(139, 92, 246, 0.2)',
-      accent: '#8b5cf6'
-    },
-    light: {
-      name: 'Light',
-      primary: '#7c3aed',
-      secondary: '#9333ea',
-      background: '#ffffff',
-      surface: 'rgba(255, 255, 255, 0.4)',
-      text: '#1f2937',
-      textSecondary: '#6b7280',
-      border: 'rgba(124, 58, 237, 0.2)',
-      accent: '#7c3aed'
-    },
-    purple: {
-      name: 'Purple',
-      primary: '#8b5cf6',
-      secondary: '#a855f7',
-      background: '#1a0b2e',
-      surface: 'rgba(26, 11, 46, 0.4)',
-      text: '#e2e8f0',
-      textSecondary: '#c4b5fd',
-      border: 'rgba(139, 92, 246, 0.3)',
-      accent: '#8b5cf6'
-    },
-    blue: {
-      name: 'Blue',
-      primary: '#3b82f6',
-      secondary: '#60a5fa',
-      background: '#0f172a',
-      surface: 'rgba(15, 23, 42, 0.4)',
-      text: '#f1f5f9',
-      textSecondary: '#94a3b8',
-      border: 'rgba(59, 130, 246, 0.2)',
-      accent: '#3b82f6'
-    },
-    green: {
-      name: 'Green',
-      primary: '#10b981',
-      secondary: '#34d399',
-      background: '#064e3b',
-      surface: 'rgba(6, 78, 59, 0.4)',
-      text: '#ecfdf5',
-      textSecondary: '#a7f3d0',
-      border: 'rgba(16, 185, 129, 0.2)',
-      accent: '#10b981'
-    }
+  // Previews for Settings UI (visual only)
+  const themes: Record<string, ThemePreview> = {
+    light: { name: 'Light', primary: '#f472b6', secondary: '#c4b5fd' },
+    dark: { name: 'Dark', primary: '#f472b6', secondary: '#1f2937' },
+    batman: { name: 'Batman', primary: '#f59e0b', secondary: '#111827' },
+    'hello-kitty': { name: 'Hello Kitty', primary: '#fb7185', secondary: '#fde68a' },
+    spiderman: { name: 'Spiderman', primary: '#ef4444', secondary: '#3b82f6' },
   }
 
-  // Predefined backgrounds
+  // Only image backgrounds apply in new mechanic (matches todoref)
   const backgrounds: Record<string, Background> = {
     default: {
       name: 'Default',
-      type: 'gradient',
-      value: 'radial-gradient(1200px 800px at 80% 20%, rgba(139, 92, 246, 0.1), transparent), linear-gradient(180deg, rgba(255,255,255,0.02), transparent), linear-gradient(45deg, rgba(139, 92, 246, 0.05), transparent)',
-      preview: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.1))'
-    },
-    aurora: {
-      name: 'Aurora',
-      type: 'gradient',
-      value: 'linear-gradient(45deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)',
-      preview: 'linear-gradient(45deg, #667eea, #764ba2)'
-    },
-    sunset: {
-      name: 'Sunset',
-      type: 'gradient',
-      value: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%)',
-      preview: 'linear-gradient(135deg, #ff9a9e, #fecfef)'
-    },
-    ocean: {
-      name: 'Ocean',
-      type: 'gradient',
-      value: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      preview: 'linear-gradient(135deg, #667eea, #764ba2)'
-    },
-    forest: {
-      name: 'Forest',
-      type: 'gradient',
-      value: 'linear-gradient(135deg, #134e5e 0%, #71b280 100%)',
-      preview: 'linear-gradient(135deg, #134e5e, #71b280)'
-    },
-    space: {
-      name: 'Space',
-      type: 'gradient',
-      value: 'radial-gradient(ellipse at center, #1e3c72 0%, #2a5298 100%)',
-      preview: 'linear-gradient(135deg, #1e3c72, #2a5298)'
+      type: 'image',
+      value: '',
+      preview: ''
     }
   }
 
   // Computed
-  const activeTheme = computed(() => themes[currentTheme.value] || themes.dark)
-  const activeBackground = computed(() => {
-    const bg = backgrounds[currentBackground.value] || backgrounds.default
-    return customBackgrounds.value.find(cb => cb.name === currentBackground.value) || bg
-  })
-
   const allThemes = computed(() => Object.values(themes))
+  const activeBackground = computed(() => {
+    return customBackgrounds.value.find(cb => cb.name === currentBackground.value)
+  })
   const allBackgrounds = computed(() => [
-    ...Object.values(backgrounds),
     ...customBackgrounds.value
   ])
 
+  // Compatibility for existing Settings.vue highlighting
+  const currentTheme = computed(() => {
+    if (currentThemeClass.value !== 'default') return currentThemeClass.value
+    return currentMode.value
+  })
+
   // Actions
-  const setTheme = (themeName: string) => {
-    if (themes[themeName]) {
-      currentTheme.value = themeName
-      saveToStorage()
-      applyTheme()
+  const setTheme = (themeKey: string) => {
+    // Accept legacy keys (e.g., 'light'/'dark') and variant keys
+    if (themeKey === 'light' || themeKey === 'dark') {
+      currentMode.value = themeKey
+      currentThemeClass.value = 'default'
+    } else if (themeKey === 'batman' || themeKey === 'hello kitty' || themeKey === 'hello-kitty' || themeKey === 'spiderman') {
+      currentThemeClass.value = (themeKey.replace(' ', '-') as ThemeClass)
+      // Variants are designed for dark base unless explicitly light
+      currentMode.value = 'dark'
     }
+    saveToStorage()
+    applyTheme()
   }
 
   const setBackground = (backgroundName: string) => {
-    const bg = backgrounds[backgroundName] || customBackgrounds.value.find(cb => cb.name === backgroundName)
+    const bg = customBackgrounds.value.find(cb => cb.name === backgroundName)
     if (bg) {
       currentBackground.value = backgroundName
       saveToStorage()
@@ -156,12 +82,12 @@ export const useThemeStore = defineStore('theme', () => {
     }
   }
 
+
   const addCustomBackground = (background: Omit<Background, 'name'> & { name: string }) => {
     const newBackground: Background = {
       ...background,
       name: background.name || `Custom ${Date.now()}`
     }
-    
     customBackgrounds.value.push(newBackground)
     saveToStorage()
   }
@@ -178,67 +104,71 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   const applyTheme = () => {
-    const theme = activeTheme.value
     const root = document.documentElement
-    
-    root.style.setProperty('--color-primary', theme.primary)
-    root.style.setProperty('--color-secondary', theme.secondary)
-    root.style.setProperty('--color-background', theme.background)
-    root.style.setProperty('--color-surface', theme.surface)
-    root.style.setProperty('--color-text', theme.text)
-    root.style.setProperty('--color-text-secondary', theme.textSecondary)
-    root.style.setProperty('--color-border', theme.border)
-    root.style.setProperty('--color-accent', theme.accent)
 
-    // Color scheme for form controls, scrollbars, etc.
-    const scheme = currentTheme.value === 'light' ? 'light' : 'dark'
-    root.style.setProperty('color-scheme', scheme)
+    // Reset theme classes
+    root.classList.remove('dark', 'theme-light', 'theme-batman', 'theme-hello-kitty', 'theme-spiderman')
 
-    // Optional: expose RGB components for effects that need rgba
-    const hexToRgb = (hex: string) => {
-      const normalized = hex.replace('#', '')
-      const bigint = parseInt(normalized.length === 3
-        ? normalized.split('').map(ch => ch + ch).join('')
-        : normalized, 16)
-      const r = (bigint >> 16) & 255
-      const g = (bigint >> 8) & 255
-      const b = bigint & 255
-      return `${r}, ${g}, ${b}`
+    // Apply mode
+    if (currentMode.value === 'dark') {
+      root.classList.add('dark')
+    } else {
+      // Optionally allow explicit theme-light
+      root.classList.add('theme-light')
     }
-    try {
-      root.style.setProperty('--color-primary-rgb', hexToRgb(theme.primary))
-      root.style.setProperty('--color-secondary-rgb', hexToRgb(theme.secondary))
-    } catch {}
+
+    // Apply variant class if selected
+    if (currentThemeClass.value !== 'default') {
+      root.classList.add(`theme-${currentThemeClass.value}`)
+    }
+
+    // Form controls and UA styling
+    root.style.setProperty('color-scheme', currentMode.value === 'dark' ? 'dark' : 'light')
   }
 
   const applyBackground = () => {
-    const background = activeBackground.value
     const root = document.documentElement
-    
-    if (background.type === 'image') {
-      root.style.setProperty('--body-background', `url(${background.value}) center/cover no-repeat fixed`)
+    const bg = activeBackground.value
+    if (bg && bg.type === 'image' && bg.value) {
+      localStorage.setItem('custom-background', bg.value)
+      root.style.setProperty('--custom-background-image', `url(${bg.value})`)
+      root.style.setProperty('--background-opacity', '0.1')
     } else {
-      root.style.setProperty('--body-background', background.value)
+      localStorage.removeItem('custom-background')
+      root.style.removeProperty('--custom-background-image')
+      root.style.setProperty('--background-opacity', '1')
     }
   }
 
   const saveToStorage = () => {
     const themeData = {
-      currentTheme: currentTheme.value,
+      currentMode: currentMode.value,
+      currentThemeClass: currentThemeClass.value,
       currentBackground: currentBackground.value,
       customBackgrounds: customBackgrounds.value
     }
-    localStorage.setItem('dreamer_theme', JSON.stringify(themeData))
+    localStorage.setItem('dreamer_theme_v2', JSON.stringify(themeData))
   }
 
   const loadFromStorage = () => {
     try {
-      const stored = localStorage.getItem('dreamer_theme')
-      if (stored) {
-        const themeData = JSON.parse(stored)
-        currentTheme.value = themeData.currentTheme || 'dark'
-        currentBackground.value = themeData.currentBackground || 'default'
-        customBackgrounds.value = themeData.customBackgrounds || []
+      const storedV2 = localStorage.getItem('dreamer_theme_v2')
+      if (storedV2) {
+        const data = JSON.parse(storedV2)
+        currentMode.value = (data.currentMode as Mode) || 'dark'
+        currentThemeClass.value = (data.currentThemeClass as ThemeClass) || 'default'
+        currentBackground.value = data.currentBackground || 'default'
+        customBackgrounds.value = data.customBackgrounds || []
+        return
+      }
+      // Fallback: infer from legacy storage
+      const storedLegacy = localStorage.getItem('dreamer_theme')
+      if (storedLegacy) {
+        const legacy = JSON.parse(storedLegacy)
+        currentMode.value = legacy.currentTheme === 'light' ? 'light' : 'dark'
+        currentThemeClass.value = 'default'
+        currentBackground.value = legacy.currentBackground || 'default'
+        customBackgrounds.value = legacy.customBackgrounds || []
       }
     } catch (error) {
       console.error('Error loading theme from storage:', error)
@@ -252,8 +182,8 @@ export const useThemeStore = defineStore('theme', () => {
       applyBackground()
     } catch (error) {
       console.error('Error initializing theme:', error)
-      // Set defaults if initialization fails
-      currentTheme.value = 'dark'
+      currentMode.value = 'dark'
+      currentThemeClass.value = 'default'
       currentBackground.value = 'default'
       applyTheme()
       applyBackground()
@@ -261,9 +191,11 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   const resetToDefault = () => {
-    currentTheme.value = 'dark'
+    currentMode.value = 'dark'
+    currentThemeClass.value = 'default'
     currentBackground.value = 'default'
     customBackgrounds.value = []
+    localStorage.removeItem('custom-background')
     saveToStorage()
     applyTheme()
     applyBackground()
@@ -271,14 +203,15 @@ export const useThemeStore = defineStore('theme', () => {
 
   return {
     // State
-    currentTheme,
+    currentMode,
+    currentThemeClass,
     currentBackground,
     customBackgrounds,
 
     // Computed
-    activeTheme,
-    activeBackground,
+    currentTheme,
     allThemes,
+    activeBackground,
     allBackgrounds,
 
     // Actions

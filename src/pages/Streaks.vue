@@ -465,7 +465,7 @@ defineExpose({ showDateInfo })
 </script>
 
 <template>
-  <div class="streaks-page">
+  <div class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
     <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="loading-spinner">
@@ -477,7 +477,7 @@ defineExpose({ showDateInfo })
     <!-- Main Content -->
     <div v-else>
       <!-- Header -->
-      <div class="page-header">
+      <div class="rounded-2xl border bg-card p-6">
         <div class="header-content">
           <h1 class="page-title">
             <Icon icon="lucide:flame" class="title-icon" />
@@ -492,15 +492,15 @@ defineExpose({ showDateInfo })
           </p>
         </div>
         <div class="header-actions">
-          <button @click="showDateInfo" class="action-btn debug">
+          <button @click="showDateInfo" class="rounded-md border px-3 py-2 text-sm hover:bg-secondary">
             <Icon icon="lucide:calendar" class="btn-icon" />
             Show Date Info
           </button>
-          <button v-if="!authStore.isAuthenticated" class="action-btn" @click="$router.push('/auth')">
+          <button v-if="!authStore.isAuthenticated" class="rounded-md border px-3 py-2 text-sm hover:bg-secondary" @click="$router.push('/auth')">
             <Icon icon="lucide:log-in" class="btn-icon" />
             Sign In
           </button>
-          <button v-else class="action-btn danger" @click="authStore.signOut()">
+          <button v-else class="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground" @click="authStore.signOut()">
             <Icon icon="lucide:log-out" class="btn-icon" />
             Sign Out
           </button>
@@ -1013,8 +1013,8 @@ defineExpose({ showDateInfo })
 
 /* Time Range Selector */
 .time-range-selector {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -1057,8 +1057,8 @@ defineExpose({ showDateInfo })
 
 /* Stats Overview */
 .stats-overview {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -1123,8 +1123,8 @@ defineExpose({ showDateInfo })
 
 /* Heatmap Section */
 .heatmap-section {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -1395,9 +1395,9 @@ defineExpose({ showDateInfo })
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
-  border-radius: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
   backdrop-filter: blur(2px);
   flex: 1;
   min-width: 200px;
@@ -1405,10 +1405,10 @@ defineExpose({ showDateInfo })
 }
 
 .summary-card:hover {
-  background: rgba(15, 15, 25, 0.8);
-  border-color: rgba(139, 92, 246, 0.4);
+  background: color-mix(in oklab, var(--color-surface), transparent 10%);
+  border-color: color-mix(in oklab, var(--color-border), var(--color-primary) 20%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .summary-icon {
@@ -1607,8 +1607,8 @@ defineExpose({ showDateInfo })
 
 /* Real-time Progress */
 .realtime-progress {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -1622,18 +1622,18 @@ defineExpose({ showDateInfo })
 }
 
 .progress-card {
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
   padding: 20px;
   transition: all 0.3s ease;
 }
 
 .progress-card:hover {
-  background: rgba(15, 15, 25, 0.9);
-  border-color: rgba(139, 92, 246, 0.4);
+  background: color-mix(in oklab, var(--color-surface), transparent 6%);
+  border-color: color-mix(in oklab, var(--color-border), var(--color-primary) 20%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .progress-header {
@@ -1799,8 +1799,8 @@ defineExpose({ showDateInfo })
 
 /* All Activities */
 .all-activities {
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -1830,9 +1830,9 @@ defineExpose({ showDateInfo })
 }
 
 .activity-card {
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
   padding: 20px;
   transition: all 0.3s ease;
   position: relative;
@@ -1850,10 +1850,10 @@ defineExpose({ showDateInfo })
 }
 
 .activity-card:hover {
-  background: rgba(15, 15, 25, 0.9);
-  border-color: var(--activity-color, #8b5cf6);
+  background: color-mix(in oklab, var(--color-surface), transparent 6%);
+  border-color: color-mix(in oklab, var(--color-border), var(--activity-color, #8b5cf6) 30%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .activity-header {

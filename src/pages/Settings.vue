@@ -23,6 +23,15 @@ const newCustomBackground = ref({
 const user = computed(() => authStore.user)
 const userMetadata = computed(() => user.value?.user_metadata || {})
 
+// Theme options mapped to class-based theming
+const themeOptions = [
+  { key: 'light', name: 'Light', primary: '#f472b6', secondary: '#c4b5fd' },
+  { key: 'dark', name: 'Dark', primary: '#f472b6', secondary: '#1f2937' },
+  { key: 'batman', name: 'Batman', primary: '#f59e0b', secondary: '#111827' },
+  { key: 'hello-kitty', name: 'Hello Kitty', primary: '#fb7185', secondary: '#fde68a' },
+  { key: 'spiderman', name: 'Spiderman', primary: '#ef4444', secondary: '#3b82f6' },
+]
+
 // Tabs
 const tabs: Array<{ id: TabType; label: string; icon: string }> = [
   { id: 'appearance', label: 'Appearance', icon: 'lucide:palette' },
@@ -31,6 +40,7 @@ const tabs: Array<{ id: TabType; label: string; icon: string }> = [
   { id: 'data', label: 'Data', icon: 'lucide:database' },
   { id: 'about', label: 'About', icon: 'lucide:info' }
 ]
+
 
 // Methods
 const handleImageUpload = (event: Event) => {
@@ -97,9 +107,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="settings-page">
+  <div class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
     <!-- Header -->
-    <div class="settings-header">
+    <div class="rounded-2xl border bg-card p-6">
       <h1 class="page-title">
         <Icon icon="lucide:settings" class="title-icon" />
         Settings
@@ -110,7 +120,7 @@ onMounted(() => {
     </div>
 
     <div class="settings-container">
-      <!-- Sidebar -->
+      <!-- Sidebar (vertical) -->
       <div class="settings-sidebar">
         <nav class="settings-nav">
           <button
@@ -136,20 +146,22 @@ onMounted(() => {
             <h3 class="setting-title">Theme</h3>
             <div class="theme-grid">
               <button
-                v-for="theme in themeStore.allThemes"
-                :key="theme.name"
-                @click="themeStore.setTheme(theme.name.toLowerCase())"
-                :class="['theme-option', { active: themeStore.currentTheme === theme.name.toLowerCase() }]"
-                :style="{ '--theme-primary': theme.primary, '--theme-secondary': theme.secondary }"
+                v-for="opt in themeOptions"
+                :key="opt.key"
+                @click="themeStore.setTheme(opt.key)"
+                :class="['theme-option', { active: themeStore.currentTheme === opt.key }]"
+                :style="{ '--theme-primary': opt.primary, '--theme-secondary': opt.secondary }"
               >
                 <div class="theme-preview">
-                  <div class="preview-header" :style="{ backgroundColor: theme.primary }"></div>
-                  <div class="preview-content" :style="{ backgroundColor: theme.surface }"></div>
+                  <div class="preview-header" :style="{ backgroundColor: opt.primary }"></div>
+                  <div class="preview-content" :style="{ backgroundColor: opt.secondary }"></div>
                 </div>
-                <span class="theme-name">{{ theme.name }}</span>
+                <span class="theme-name">{{ opt.name }}</span>
               </button>
             </div>
           </div>
+
+          
 
           <!-- Background Selection -->
           <div class="setting-group">
@@ -719,6 +731,8 @@ onMounted(() => {
   display: flex;
   gap: 12px;
 }
+
+ 
 
 .add-btn, .cancel-btn {
   padding: 8px 16px;

@@ -4,7 +4,42 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400;1,700&display=swap" rel="stylesheet" />
     <title>Dreamer - Personal Productivity Platform</title>
+    <script>
+      (function() {
+        try {
+          var root = document.documentElement;
+          var data = localStorage.getItem('dreamer_theme_v2');
+          var mode = 'dark';
+          var themeClass = 'default';
+          if (data) {
+            var parsed = JSON.parse(data);
+            mode = parsed.currentMode || 'dark';
+            themeClass = parsed.currentThemeClass || 'default';
+          } else {
+            // Legacy fallback
+            var legacy = localStorage.getItem('dreamer_theme');
+            if (legacy) {
+              var p = JSON.parse(legacy);
+              mode = p.currentTheme === 'light' ? 'light' : 'dark';
+            }
+          }
+          root.classList.remove('dark','theme-light','theme-batman','theme-hello-kitty','theme-spiderman');
+          if (mode === 'dark') root.classList.add('dark'); else root.classList.add('theme-light');
+          if (themeClass && themeClass !== 'default') root.classList.add('theme-' + themeClass);
+          root.style.setProperty('color-scheme', mode === 'dark' ? 'dark' : 'light');
+
+          var customBg = localStorage.getItem('custom-background');
+          if (customBg) {
+            root.style.setProperty('--custom-background-image', 'url(' + customBg + ')');
+            root.style.setProperty('--background-opacity', '0.1');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

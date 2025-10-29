@@ -1,350 +1,191 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useLocalStorage } from '@/utils/storage'
+import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
+import { useGoalsStore, type Goal } from '@/stores/goals'
 
-// Goal state
-const currentView = ref<'mini' | 'longterm'>('mini')
-const newGoalText = ref('')
-const newGoalCategory = ref('personal')
-const newGoalDeadline = ref('')
-const newGoalPriority = ref('medium')
+const goalsStore = useGoalsStore()
 
-// Goals data persisted locally
-const goals = useLocalStorage<Array<{
-  id: number
-  text: string
-  category: string
-  priority: string
-  deadline: string
-  progress: number
-  status: string
-  type: string
-  createdAt: string
-  completedAt: string | null
-}>>('goals:local', [])
-
-// Computed properties
-const miniGoals = computed(() => goals.value.filter(g => g.type === 'mini'))
-const longtermGoals = computed(() => goals.value.filter(g => g.type === 'longterm'))
-const activeGoals = computed(() => goals.value.filter(g => g.status === 'active'))
-const completedGoals = computed(() => goals.value.filter(g => g.status === 'completed'))
-
-const currentGoals = computed(() => {
-  return currentView.value === 'mini' ? miniGoals.value : longtermGoals.value
+// Form state (todoref-like)
+const form = ref({
+  title: '',
+  description: '',
+  category: 'personal' as Goal['category'],
+  start_date: '',
+  target_date: '',
 })
 
-const totalGoals = computed(() => goals.value.length)
-const completedCount = computed(() => completedGoals.value.length)
-const pendingCount = computed(() => activeGoals.value.length)
-const completionRate = computed(() => {
-  return totalGoals.value > 0 ? Math.round((completedCount.value / totalGoals.value) * 100) : 0
-})
+const milestoneTitle = ref('')
+const milestones = ref<Array<{ id: string; title: string; completed: boolean; due_date?: string }>>([])
 
-// Goal actions
-const addGoal = () => {
-  if (!newGoalText.value.trim()) return
-  
-  const newGoal = {
-    id: Date.now(),
-    text: newGoalText.value.trim(),
-    category: newGoalCategory.value,
-    priority: newGoalPriority.value,
-    deadline: newGoalDeadline.value,
-    progress: 0,
+const resetForm = () => {
+  form.value = { title: '', description: '', category: 'personal', start_date: '', target_date: '' }
+  milestones.value = []
+  milestoneTitle.value = ''
+}
+
+const addMilestone = () => {
+  const title = milestoneTitle.value.trim()
+  if (!title) return
+  milestones.value.push({ id: `ms_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, title, completed: false })
+  milestoneTitle.value = ''
+}
+
+const removeMilestone = (id: string) => {
+  milestones.value = milestones.value.filter(m => m.id !== id)
+}
+
+const toggleMilestone = async (goal: Goal, msId: string) => {
+  const next = (goal.milestones || []).map(m => m.id === msId ? { ...m, completed: !m.completed } : m)
+  await goalsStore.updateGoal(goal.id, { milestones: next, current_value: next.filter(m => m.completed).length })
+}
+
+// Stats (kept for future use if needed)
+
+const createGoal = async () => {
+  if (!form.value.title.trim()) return
+  const payload: Omit<Goal, 'id' | 'created_at' | 'updated_at'> = {
+    title: form.value.title.trim(),
+    description: form.value.description.trim(),
+    category: form.value.category,
+    priority: 'medium',
     status: 'active',
-    type: currentView.value,
-    createdAt: new Date().toISOString().split('T')[0] || '',
-    completedAt: null
+    target_value: milestones.value.length || 1,
+    current_value: 0,
+    unit: 'milestone',
+    target_date: form.value.target_date,
+    start_date: form.value.start_date,
+    milestones: milestones.value,
+    completed_at: undefined,
   }
-  
-  goals.value.push(newGoal)
-  newGoalText.value = ''
-  newGoalDeadline.value = ''
+  await goalsStore.createGoal(payload as any)
+  resetForm()
 }
 
-const updateProgress = (goalId: number, progress: number) => {
-  const goal = goals.value.find(g => g.id === goalId)
-  if (goal) {
-    goal.progress = Math.max(0, Math.min(100, progress))
-    if (goal.progress === 100 && goal.status === 'active') {
-      goal.status = 'completed'
-      goal.completedAt = new Date().toISOString().split('T')[0] || null
-    }
-  }
-}
-
-const deleteGoal = (goalId: number) => {
-  const index = goals.value.findIndex(g => g.id === goalId)
-  if (index > -1) {
-    goals.value.splice(index, 1)
-  }
-}
-
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case 'learning': return 'lucide:book-open'
-    case 'health': return 'lucide:heart'
-    case 'financial': return 'lucide:dollar-sign'
-    case 'career': return 'lucide:briefcase'
-    case 'personal': return 'lucide:user'
-    case 'fitness': return 'lucide:dumbbell'
-    default: return 'lucide:target'
-  }
-}
-
-const getCategoryColor = (category: string) => {
-  switch (category) {
-    case 'learning': return 'text-blue-400 bg-blue-400/20 border-blue-400/30'
-    case 'health': return 'text-green-400 bg-green-400/20 border-green-400/30'
-    case 'financial': return 'text-yellow-400 bg-yellow-400/20 border-yellow-400/30'
-    case 'career': return 'text-purple-400 bg-purple-400/20 border-purple-400/30'
-    case 'personal': return 'text-pink-400 bg-pink-400/20 border-pink-400/30'
-    case 'fitness': return 'text-orange-400 bg-orange-400/20 border-orange-400/30'
-    default: return 'text-gray-400 bg-gray-400/20 border-gray-400/30'
-  }
-}
-
-const getPriorityColor = (priority: string) => {
-  switch (priority) {
-    case 'high': return 'text-red-400 bg-red-400/20 border-red-400/30'
-    case 'medium': return 'text-yellow-400 bg-yellow-400/20 border-yellow-400/30'
-    case 'low': return 'text-green-400 bg-green-400/20 border-green-400/30'
-    default: return 'text-gray-400 bg-gray-400/20 border-gray-400/30'
-  }
-}
-
-const getDaysUntilDeadline = (deadline: string) => {
-  if (!deadline) return null
-  const today = new Date()
-  const deadlineDate = new Date(deadline)
-  const diffTime = deadlineDate.getTime() - today.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return diffDays
-}
-
-const isOverdue = (deadline: string) => {
-  const days = getDaysUntilDeadline(deadline)
-  return days !== null && days < 0
+const getDaysRemaining = (date: string) => goalsStore.getDaysRemaining(date)
+const getCategoryIcon = (c: string) => goalsStore.getCategoryIcon(c)
+const getProgressPercent = (g: Goal) => {
+  const total = Math.max(1, g.target_value || 1)
+  const current = Math.min(g.current_value || 0, total)
+  return Math.round((current / total) * 100)
 }
 </script>
 
 <template>
-  <div class="goals-page">
+  <div class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
     <!-- Header -->
-    <div class="goals-header">
-      <div class="header-content">
-        <h1 class="page-title">
-          <Icon icon="lucide:target" class="title-icon" />
-          Goals & Milestones
-        </h1>
-        <div class="header-actions">
-          <button @click="addGoal" class="action-btn primary">
-            <Icon icon="lucide:plus" class="btn-icon" />
-            Add Goal
+    <div class="rounded-2xl border bg-card p-6">
+      <h1 class="page-title">
+        <Icon icon="lucide:target" class="title-icon" />
+        Goals
+      </h1>
+      <p class="page-subtitle">Define clear goals with milestones, category, and dates.</p>
+    </div>
+
+    <div class="goals-layout">
+      <!-- Left column: goals -->
+      <section class="goals-left">
+        <h2 class="section-title">Current Goals</h2>
+        <div class="goals-grid">
+          <div v-for="goal in goalsStore.goals" :key="goal.id" class="goal-card">
+            <div class="goal-card-header">
+              <h3 class="goal-card-title">{{ goal.title }}</h3>
+              <button class="delete-btn" @click="goalsStore.deleteGoal(goal.id)" title="Delete goal">
+                <Icon icon="lucide:trash-2" />
+              </button>
+            </div>
+            <p v-if="goal.description" class="goal-card-desc">"{{ goal.description }}"</p>
+            <div class="goal-dates" v-if="goal.start_date || goal.target_date">
+              <span class="date-chip">
+                <template v-if="goal.start_date">
+                  <Icon icon="lucide:calendar" class="date-icon" /> 
+                  {{ goal.start_date }}
+                </template>
+                <template v-if="goal.start_date && goal.target_date">
+                  <span class="date-separator">•</span>
+                </template>
+                <template v-if="goal.target_date">
+                  <Icon icon="lucide:flag" class="date-icon" /> 
+                  {{ goal.target_date }} ({{ getDaysRemaining(goal.target_date) }}d left)
+                </template>
+              </span>
+            </div>
+            <div class="goal-progressbar">
+              <div class="bar"><div class="fill" :style="{ width: getProgressPercent(goal) + '%' }"></div></div>
+              <div class="percent">{{ getProgressPercent(goal) }}%</div>
+            </div>
+            <div class="goal-meta-line">Milestones:</div>
+            <ul class="milestones-list">
+              <li v-for="m in goal.milestones || []" :key="m.id" class="ms-row">
+                <button class="ms-check" @click="toggleMilestone(goal, m.id)"><span :class="['dot', { done: m.completed }]" /></button>
+                <span :class="['ms-title', { done: m.completed }]">{{ m.title }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div v-if="goalsStore.goals.length === 0" class="empty-state">
+          <Icon icon="lucide:target" class="empty-icon" />
+          <h3 class="empty-title">No goals yet</h3>
+          <p class="empty-description">Create your first goal in the sidebar.</p>
+        </div>
+      </section>
+
+      <!-- Right column: form -->
+      <aside class="goals-right">
+        <div class="right-card">
+          <h2 class="right-title">Define a New Goal</h2>
+          <button class="right-help" type="button">
+            <Icon icon="lucide:sparkles" /> Get SMART goal help
           </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- View Toggle -->
-    <div class="view-toggle">
-      <button 
-        @click="currentView = 'mini'"
-        :class="['toggle-btn', { active: currentView === 'mini' }]"
-      >
-        <Icon icon="lucide:zap" class="toggle-icon" />
-        Mini Goals
-      </button>
-      <button 
-        @click="currentView = 'longterm'"
-        :class="['toggle-btn', { active: currentView === 'longterm' }]"
-      >
-        <Icon icon="lucide:flag" class="toggle-icon" />
-        Long-term Goals
-      </button>
-    </div>
-
-    <!-- Statistics -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">
-          <Icon icon="lucide:target" />
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ totalGoals }}</div>
-          <div class="stat-label">Total Goals</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <Icon icon="lucide:check-circle" />
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ completedCount }}</div>
-          <div class="stat-label">Completed</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <Icon icon="lucide:clock" />
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ pendingCount }}</div>
-          <div class="stat-label">Pending</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <Icon icon="lucide:trending-up" />
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ completionRate }}%</div>
-          <div class="stat-label">Complete</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Progress Overview -->
-    <div class="progress-overview">
-      <h2 class="section-title">Progress Overview</h2>
-      <div class="progress-bar">
-        <div 
-          class="progress-fill" 
-          :style="{ width: `${completionRate}%` }"
-        ></div>
-      </div>
-      <div class="progress-text">{{ completionRate }}% Complete</div>
-    </div>
-
-    <!-- Add Goal Form -->
-    <div class="add-goal">
-      <h2 class="section-title">Add New Goal</h2>
-      <div class="add-form">
-        <input 
-          v-model="newGoalText"
-          placeholder="What's your goal? e.g., Learn a new language"
-          class="goal-input"
-        />
-        <select v-model="newGoalCategory" class="category-select">
-          <option value="learning">Learning</option>
-          <option value="health">Health</option>
-          <option value="financial">Financial</option>
-          <option value="career">Career</option>
-          <option value="personal">Personal</option>
-          <option value="fitness">Fitness</option>
-        </select>
-        <select v-model="newGoalPriority" class="priority-select">
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
-        <input 
-          v-model="newGoalDeadline"
-          type="date"
-          class="deadline-input"
-        />
-        <button @click="addGoal" class="add-btn">
-          <Icon icon="lucide:plus" class="add-icon" />
-          Add Goal
-        </button>
-      </div>
-    </div>
-
-    <!-- Goals List -->
-    <div class="goals-list">
-      <h2 class="section-title">
-        {{ currentView === 'mini' ? 'Mini Goals' : 'Long-term Goals' }}
-      </h2>
-      
-      <div class="goals-grid">
-        <div 
-          v-for="goal in currentGoals" 
-          :key="goal.id"
-          :class="['goal-item', { completed: goal.status === 'completed' }]"
-        >
-          <div class="goal-header">
-            <div class="goal-info">
-              <Icon :icon="getCategoryIcon(goal.category)" class="goal-icon" />
-              <div class="goal-details">
-                <h3 class="goal-title">{{ goal.text }}</h3>
-                <div class="goal-meta">
-                  <span :class="['goal-category', getCategoryColor(goal.category)]">
-                    {{ goal.category }}
-                  </span>
-                  <span :class="['goal-priority', getPriorityColor(goal.priority)]">
-                    {{ goal.priority }}
-                  </span>
-                  <span v-if="goal.deadline" class="goal-deadline">
-                    <Icon icon="lucide:calendar" class="deadline-icon" />
-                    {{ goal.deadline }}
-                    <span v-if="isOverdue(goal.deadline)" class="overdue">Overdue</span>
-                  </span>
-                </div>
+          <div class="form-grid">
+            <div class="form-row">
+              <label class="form-label">Name</label>
+              <input v-model="form.title" class="input" placeholder="e.g., Learn Spanish" />
+            </div>
+            <div class="form-row">
+              <label class="form-label">Category</label>
+              <select v-model="form.category" class="select">
+                <option value="learning">Learning</option>
+                <option value="health">Health</option>
+                <option value="work">Work</option>
+                <option value="personal">Personal</option>
+                <option value="fitness">Fitness</option>
+                <option value="creative">Creative</option>
+              </select>
+            </div>
+            <div class="form-row cols-2">
+              <div>
+                <label class="form-label">Start</label>
+                <input v-model="form.start_date" type="date" class="input" />
+              </div>
+              <div>
+                <label class="form-label">Deadline</label>
+                <input v-model="form.target_date" type="date" class="input" />
               </div>
             </div>
-            
-            <div class="goal-actions">
-              <button @click="deleteGoal(goal.id)" class="delete-btn">
-                <Icon icon="lucide:trash-2" class="action-icon" />
-              </button>
+            <div class="form-row">
+              <label class="form-label">Details (optional)</label>
+              <textarea v-model="form.description" class="textarea" rows="3" placeholder="Briefly describe the goal" />
             </div>
-          </div>
-          
-          <div class="goal-progress">
-            <div class="progress-header">
-              <span class="progress-label">Progress</span>
-              <span class="progress-percentage">{{ goal.progress }}%</span>
+            <div class="form-row">
+              <div class="form-section-title">Milestones</div>
+              <div class="milestone-add">
+                <input v-model="milestoneTitle" class="input" placeholder="Add milestone" @keyup.enter="addMilestone" />
+                <button class="btn" @click="addMilestone"><Icon icon="lucide:plus" class="btn-icon" /> Add</button>
+              </div>
+              <ul class="milestone-list">
+                <li v-for="m in milestones" :key="m.id" class="milestone-item">
+                  <span class="milestone-title">{{ m.title }}</span>
+                  <button class="icon-btn" @click="removeMilestone(m.id)" title="Remove"><Icon icon="lucide:x" /></button>
+                </li>
+              </ul>
             </div>
-            <div class="progress-bar">
-              <div 
-                class="progress-fill" 
-                :style="{ width: `${goal.progress}%` }"
-              ></div>
-            </div>
-            <div class="progress-controls">
-              <button 
-                @click="updateProgress(goal.id, goal.progress - 10)"
-                :disabled="goal.progress <= 0"
-                class="progress-btn"
-              >
-                <Icon icon="lucide:minus" class="btn-icon" />
-              </button>
-              <input 
-                type="range"
-                :value="goal.progress"
-                @input="updateProgress(goal.id, parseInt(($event.target as HTMLInputElement).value))"
-                min="0"
-                max="100"
-                class="progress-slider"
-              />
-              <button 
-                @click="updateProgress(goal.id, goal.progress + 10)"
-                :disabled="goal.progress >= 100"
-                class="progress-btn"
-              >
-                <Icon icon="lucide:plus" class="btn-icon" />
-              </button>
+            <div class="form-actions">
+              <button class="primary-btn" @click="createGoal" :disabled="!form.title">Create Goal</button>
+              <button class="ghost-btn" @click="resetForm">Reset</button>
             </div>
           </div>
         </div>
-      </div>
-      
-      <!-- Empty State -->
-      <div v-if="currentGoals.length === 0" class="empty-state">
-        <Icon icon="lucide:target" class="empty-icon" />
-        <h3 class="empty-title">No {{ currentView === 'mini' ? 'Mini' : 'Long-term' }} Goals Yet</h3>
-        <p class="empty-description">
-          {{ currentView === 'mini' ? 'Start by adding your first mini goal to build momentum!' : 'Set your long-term vision and start working towards it.' }}
-        </p>
-        <button class="empty-action">
-          <Icon icon="lucide:plus" class="action-icon" />
-          Add Your First Goal
-        </button>
-      </div>
+      </aside>
     </div>
   </div>
 </template>
@@ -425,6 +266,56 @@ const isOverdue = (deadline: string) => {
 .btn-icon {
   font-size: 16px;
 }
+
+/* Two-column layout and card styles (todoref-like) */
+.goals-layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 1024px) { .goals-layout { grid-template-columns: 2fr 1fr; } }
+.goals-left { display: flex; flex-direction: column; gap: 16px; }
+.goals-right { position: sticky; top: 88px; height: fit-content; }
+.right-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 16px; padding: 16px; }
+.right-title { font-size: 1.25rem; font-weight: 700; color: var(--color-text); margin: 0 0 4px; }
+.right-sub { color: var(--color-text-secondary); margin: 0 0 12px; font-size: .9rem; }
+.right-help { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--color-primary); background: transparent; border: none; padding: 0; cursor: pointer; margin-bottom: 8px; }
+
+/* Form styles - simplified and spacious */
+.form-grid { display: grid; gap: 12px; }
+.form-row { display: grid; gap: 6px; }
+.form-row.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-label { font-size: .85rem; color: var(--color-text-secondary); }
+.input, .select, .textarea { width: 100%; background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text); border-radius: 10px; padding: 10px 12px; font-size: .95rem; }
+.textarea { resize: vertical; min-height: 84px; }
+.input:focus, .select:focus, .textarea:focus { outline: none; border-color: color-mix(in oklab, var(--color-primary), transparent 30%); box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary), transparent 92%); }
+.form-section-title { font-weight: 700; color: var(--color-text); margin-bottom: 4px; }
+.milestone-add { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--color-border); color: var(--color-text); background: var(--color-surface); cursor: pointer; }
+.btn:hover { border-color: color-mix(in oklab, var(--color-primary), transparent 60%); }
+.btn-icon { font-size: 16px; }
+.milestone-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 6px; max-height: 160px; overflow: auto; }
+.milestone-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px; border: 1px solid var(--color-border); background: var(--color-surface); border-radius: 8px; }
+.milestone-title { color: var(--color-text); font-size: .95rem; }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+.icon-btn:hover { color: var(--color-text); border-color: color-mix(in oklab, var(--color-primary), transparent 60%); }
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.primary-btn { background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #fff; border: none; border-radius: 10px; padding: 10px 14px; font-weight: 700; cursor: pointer; }
+.primary-btn:disabled { opacity: .6; cursor: not-allowed; }
+.ghost-btn { background: transparent; border: 1px solid var(--color-border); color: var(--color-text); border-radius: 10px; padding: 10px 14px; cursor: pointer; }
+
+.goal-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 16px; padding: 16px; }
+.goal-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.goal-card-title { font-size: 1.25rem; font-weight: 800; color: var(--color-text); margin: 0 0 8px; }
+.goal-card-desc { color: var(--color-text-secondary); font-style: italic; margin: 0 0 12px; }
+.goal-progressbar { display: flex; align-items: center; gap: 8px; margin: 8px 0 12px; }
+.goal-progressbar .bar { flex: 1; height: 10px; background: color-mix(in oklab, var(--color-primary), transparent 85%); border-radius: 999px; overflow: hidden; }
+.goal-progressbar .fill { height: 100%; background-image: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); }
+.goal-progressbar .percent { color: var(--color-text); font-weight: 700; font-size: 0.9rem; }
+.goal-meta-line { margin: 8px 0 6px; color: var(--color-text); font-weight: 700; }
+.milestones-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.ms-row { display: flex; align-items: center; gap: 10px; }
+.ms-check { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--color-border); background: transparent; cursor: pointer; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: transparent; border: 2px solid color-mix(in oklab, var(--color-primary), transparent 30%); display: inline-block; }
+.dot.done { background: var(--color-primary); border-color: var(--color-primary); }
+.ms-title { color: var(--color-text); }
+.ms-title.done { text-decoration: line-through; opacity: .7; }
 
 /* View Toggle */
 .view-toggle {
@@ -856,6 +747,38 @@ const isOverdue = (deadline: string) => {
   cursor: pointer;
   border: none;
   box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+}
+
+/* Goal Dates */
+.goal-dates {
+  margin: 8px 0;
+  white-space: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
+.date-chip {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-surface-hover);
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  gap: 6px;
+}
+
+.date-icon {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.date-separator {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+  margin: 0 4px;
 }
 
 /* Empty State */

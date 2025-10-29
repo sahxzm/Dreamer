@@ -4,6 +4,7 @@ import { Icon } from '@iconify/vue'
 import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
+const props = defineProps<{ hideTrigger?: boolean }>()
 
 // State
 const isOpen = ref(false)
@@ -78,8 +79,8 @@ defineExpose({
 </script>
 
 <template>
-  <!-- Profile Button -->
-  <button @click="openProfile" class="profile-btn">
+  <!-- Profile Button (optional trigger) -->
+  <button v-if="!props.hideTrigger && user" @click="openProfile" class="profile-btn">
     <div class="avatar">
       <Icon icon="lucide:user" class="avatar-icon" />
     </div>
@@ -225,10 +226,10 @@ defineExpose({
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
-  background: rgba(15, 15, 25, 0.6);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
-  color: #e2e8f0;
+  color: var(--color-text);
   cursor: pointer;
   transition: all 0.2s ease;
   backdrop-filter: blur(2px);
@@ -237,8 +238,8 @@ defineExpose({
 }
 
 .profile-btn:hover {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: rgba(139, 92, 246, 0.4);
+  background: color-mix(in oklab, var(--color-surface), transparent 10%);
+  border-color: color-mix(in oklab, var(--color-border), var(--color-primary) 20%);
   transform: translateY(-1px);
 }
 
@@ -248,7 +249,7 @@ defineExpose({
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   border-radius: 8px;
   color: #fff;
 }
@@ -267,13 +268,13 @@ defineExpose({
 .profile-name {
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-text);
   line-height: 1;
 }
 
 .profile-email {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   line-height: 1;
 }
 
@@ -304,15 +305,15 @@ defineExpose({
 }
 
 .profile-modal {
-  background: rgba(15, 15, 25, 0.95);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 20px;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
   backdrop-filter: blur(2px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
 .profile-header {
@@ -329,7 +330,7 @@ defineExpose({
   justify-content: center;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   border-radius: 16px;
   color: #fff;
 }
@@ -345,13 +346,13 @@ defineExpose({
 .profile-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text);
   margin-bottom: 4px;
 }
 
 .profile-subtitle {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
@@ -361,18 +362,18 @@ defineExpose({
   justify-content: center;
   width: 40px;
   height: 40px;
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .close-btn:hover {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: rgba(139, 92, 246, 0.4);
-  color: #e2e8f0;
+  background: color-mix(in oklab, var(--color-surface), transparent 10%);
+  border-color: color-mix(in oklab, var(--color-border), var(--color-primary) 20%);
+  color: var(--color-text);
 }
 
 .close-icon {
@@ -446,7 +447,7 @@ defineExpose({
 .section-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #8b5cf6;
+  color: var(--color-primary);
   margin: 0;
 }
 
@@ -455,7 +456,7 @@ defineExpose({
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .info-item:last-child {
@@ -464,7 +465,7 @@ defineExpose({
 
 .info-icon {
   font-size: 16px;
-  color: #8b5cf6;
+  color: var(--color-primary);
   flex-shrink: 0;
 }
 
@@ -477,7 +478,7 @@ defineExpose({
 
 .info-label {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--color-text-secondary);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -485,7 +486,7 @@ defineExpose({
 
 .info-value {
   font-size: 14px;
-  color: #e2e8f0;
+  color: var(--color-text);
   font-weight: 500;
 }
 
@@ -493,7 +494,7 @@ defineExpose({
   display: flex;
   gap: 12px;
   padding: 24px;
-  border-top: 1px solid rgba(139, 92, 246, 0.1);
+  border-top: 1px solid var(--color-border);
   margin-top: 24px;
 }
 
@@ -515,12 +516,12 @@ defineExpose({
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: #fff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  filter: brightness(1.05);
   transform: translateY(-1px);
 }
 
@@ -530,25 +531,25 @@ defineExpose({
 }
 
 .btn-secondary {
-  background: rgba(15, 15, 25, 0.8);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  color: #e2e8f0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
 }
 
 .btn-secondary:hover {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: rgba(139, 92, 246, 0.5);
+  background: color-mix(in oklab, var(--color-surface), transparent 10%);
+  border-color: color-mix(in oklab, var(--color-border), var(--color-primary) 20%);
 }
 
 .btn-danger {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
+  background: color-mix(in oklab, #ef4444, transparent 90%);
+  border: 1px solid color-mix(in oklab, #ef4444, transparent 70%);
+  color: color-mix(in oklab, #ef4444, white 30%);
 }
 
 .btn-danger:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.5);
+  background: color-mix(in oklab, #ef4444, transparent 80%);
+  border-color: color-mix(in oklab, #ef4444, transparent 55%);
 }
 
 .btn-icon {

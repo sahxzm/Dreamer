@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useLocalStorage } from '@/utils/storage'
 import { Icon } from '@iconify/vue'
 
@@ -7,7 +7,17 @@ import { Icon } from '@iconify/vue'
 const currentView = ref<'today' | 'all'>('today')
 const showNewEntry = ref(false)
 const searchQuery = ref('')
-const selectedMood = ref('')
+const showEntryModal = ref(false)
+const selectedEntry = ref<{
+  id: number
+  title: string
+  content: string
+  mood?: string
+  tags: string[]
+  date: string
+  createdAt: string
+} | null>(null)
+// removed unused selectedMood
 const selectedTemplate = ref('')
 
 // New entry form
@@ -119,54 +129,10 @@ const filteredEntries = computed(() => {
   )
 })
 
-const journalStats = computed(() => {
-  const totalEntries = journalEntries.value.length
-  const thisWeek = journalEntries.value.filter(entry => {
-    const entryDate = new Date(entry.date)
-    const weekAgo = new Date()
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    return entryDate >= weekAgo
-  }).length
-  
-  const moodCounts = journalEntries.value.reduce((acc, entry) => {
-    acc[entry.mood] = (acc[entry.mood] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
-  
-  const topMood = Object.entries(moodCounts).sort(([,a], [,b]) => b - a)[0]
-  
-  return {
-    totalEntries,
-    thisWeek,
-    topMood: topMood ? topMood[0] : 'none',
-    streak: calculateStreak()
-  }
-})
+// removed unused journalStats
 
 // Functions
-const calculateStreak = () => {
-  const entries = journalEntries.value
-    .map(entry => entry.date)
-    .sort()
-    .reverse()
-  
-  let streak = 0
-  const today = new Date()
-  
-  for (let i = 0; i < entries.length; i++) {
-    const entryDate = new Date(entries[i])
-    const expectedDate = new Date(today)
-    expectedDate.setDate(expectedDate.getDate() - i)
-    
-    if (entryDate.toDateString() === expectedDate.toDateString()) {
-      streak++
-    } else {
-      break
-    }
-  }
-  
-  return streak
-}
+// removed unused calculateStreak
 
 const startNewEntry = () => {
   showNewEntry.value = true
@@ -182,20 +148,28 @@ const startNewEntry = () => {
 
 const saveEntry = () => {
   if (!newEntry.value.title.trim() || !newEntry.value.content.trim()) return
-  
   const entry = {
     id: Date.now(),
     title: newEntry.value.title.trim(),
     content: newEntry.value.content.trim(),
     mood: newEntry.value.mood,
     tags: newEntry.value.tags,
-    date: newEntry.value.date,
+    date: (newEntry.value.date as string) ?? new Date().toISOString().split('T')[0],
     createdAt: new Date().toISOString()
   }
-  
-  journalEntries.value.unshift(entry)
+  journalEntries.value = [entry, ...journalEntries.value]
   showNewEntry.value = false
   resetForm()
+}
+
+const onTagEnter = (e: KeyboardEvent) => {
+  const target = e.target as HTMLInputElement | null
+  if (!target) return
+  const value = target.value?.trim()
+  if (value) {
+    addTag(value)
+    target.value = ''
+  }
 }
 
 const resetForm = () => {
@@ -206,13 +180,6 @@ const resetForm = () => {
     tags: [],
     template: '',
     date: new Date().toISOString().split('T')[0]
-  }
-}
-
-const deleteEntry = (entryId: number) => {
-  const index = journalEntries.value.findIndex(entry => entry.id === entryId)
-  if (index > -1) {
-    journalEntries.value.splice(index, 1)
   }
 }
 
@@ -236,15 +203,7 @@ const applyTemplate = (templateId: string) => {
   }
 }
 
-const getMoodEmoji = (mood: string) => {
-  const moodOption = moodOptions.value.find(m => m.value === mood)
-  return moodOption ? moodOption.emoji : '😊'
-}
-
-const getMoodLabel = (mood: string) => {
-  const moodOption = moodOptions.value.find(m => m.value === mood)
-  return moodOption ? moodOption.label : 'Unknown'
-}
+// removed unused mood helpers
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
@@ -256,135 +215,65 @@ const formatDate = (dateString: string) => {
   })
 }
 
-const getRelativeTime = (dateString: string) => {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-  
-  if (diffInHours < 1) return 'Just now'
-  if (diffInHours < 24) return `${diffInHours}h ago`
-  const diffInDays = Math.floor(diffInHours / 24)
-  if (diffInDays < 7) return `${diffInDays}d ago`
-  return formatDate(dateString)
+// removed unused relative time helper
+
+const openEntry = (entry: {
+  id: number
+  title: string
+  content: string
+  mood?: string
+  tags: string[]
+  date: string
+  createdAt: string
+}) => {
+  selectedEntry.value = entry
+  showEntryModal.value = true
+}
+
+const closeEntry = () => {
+  showEntryModal.value = false
+  selectedEntry.value = null
 }
 </script>
 
 <template>
-  <div class="journal-page">
-    <!-- Header -->
-    <div class="journal-header">
-      <div class="header-content">
-        <h1 class="page-title">
-          <Icon icon="lucide:book-open" class="title-icon" />
-          Journal & Reflection
-        </h1>
-        <div class="header-actions">
-          <button @click="startNewEntry" class="action-btn primary">
-            <Icon icon="lucide:plus" class="btn-icon" />
-            New Entry
-          </button>
-        </div>
+  <div class="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <div class="flex items-center justify-between space-y-2">
+      <div>
+        <h2 class="text-3xl font-bold tracking-tight font-headline">Personal Journal</h2>
+        <p class="text-muted-foreground">A quiet space for your thoughts, ideas, and reflections.</p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button @click="startNewEntry" class="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
+          <Icon icon="lucide:plus-circle" class="mr-2 h-4 w-4 inline" />
+          New Entry
+        </button>
       </div>
     </div>
 
-    <!-- Statistics -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">
-          <Icon icon="lucide:book" />
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ journalStats.totalEntries }}</div>
-          <div class="stat-label">Total Entries</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <Icon icon="lucide:calendar" />
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ journalStats.thisWeek }}</div>
-          <div class="stat-label">This Week</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <Icon icon="lucide:flame" />
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ journalStats.streak }}</div>
-          <div class="stat-label">Day Streak</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">
-          <Icon icon="lucide:heart" />
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ getMoodEmoji(journalStats.topMood) }}</div>
-          <div class="stat-label">Top Mood</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- View Toggle -->
-    <div class="view-toggle">
-      <button 
-        @click="currentView = 'today'"
-        :class="['toggle-btn', { active: currentView === 'today' }]"
-      >
-        <Icon icon="lucide:calendar" class="toggle-icon" />
-        Today
-      </button>
-      <button 
-        @click="currentView = 'all'"
-        :class="['toggle-btn', { active: currentView === 'all' }]"
-      >
-        <Icon icon="lucide:archive" class="toggle-icon" />
-        All Entries
-      </button>
-    </div>
-
-    <!-- Search -->
-    <div class="search-section">
-      <div class="search-container">
-        <Icon icon="lucide:search" class="search-icon" />
-        <input 
-          v-model="searchQuery"
-          placeholder="Search entries, tags, or content..."
-          class="search-input"
-        />
-      </div>
+    <div class="relative">
+      <Icon icon="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <input v-model="searchQuery" placeholder="Search entries..." class="pl-9 rounded-full w-full border bg-background px-3 py-2 text-sm" />
     </div>
 
     <!-- New Entry Modal -->
     <div v-if="showNewEntry" class="modal-overlay" @click="showNewEntry = false">
-      <div class="modal-content" @click.stop>
+      <div class="modal-content rounded-2xl border bg-card" @click.stop>
         <div class="modal-header">
           <h2 class="modal-title">New Journal Entry</h2>
-          <button @click="showNewEntry = false" class="close-btn">
+          <button @click="showNewEntry = false" class="rounded-md border px-2 py-2 hover:bg-secondary">
             <Icon icon="lucide:x" class="close-icon" />
           </button>
         </div>
-        
         <div class="modal-body">
-          <!-- Entry Form -->
           <div class="entry-form">
-            <input 
-              v-model="newEntry.title"
-              placeholder="Entry title..."
-              class="entry-title"
-            />
-            
-            <!-- Mood Selection -->
+            <input v-model="newEntry.title" placeholder="Entry title..." class="entry-title" />
+
             <div class="mood-section">
               <label class="section-label">How are you feeling?</label>
               <div class="mood-grid">
-                <button 
-                  v-for="mood in moodOptions" 
+                <button
+                  v-for="mood in moodOptions"
                   :key="mood.value"
                   @click="newEntry.mood = mood.value"
                   :class="['mood-btn', { active: newEntry.mood === mood.value }]"
@@ -395,12 +284,11 @@ const getRelativeTime = (dateString: string) => {
               </div>
             </div>
 
-            <!-- Reflection Templates -->
             <div class="template-section">
               <label class="section-label">Reflection Templates</label>
               <div class="template-grid">
-                <button 
-                  v-for="template in reflectionTemplates" 
+                <button
+                  v-for="template in reflectionTemplates"
                   :key="template.id"
                   @click="applyTemplate(template.id)"
                   :class="['template-btn', { active: selectedTemplate === template.id }]"
@@ -411,10 +299,9 @@ const getRelativeTime = (dateString: string) => {
               </div>
             </div>
 
-            <!-- Content Editor -->
             <div class="content-section">
               <label class="section-label">Your thoughts</label>
-              <textarea 
+              <textarea
                 v-model="newEntry.content"
                 placeholder="Write your thoughts, reflections, or use the templates above..."
                 class="entry-content"
@@ -422,21 +309,16 @@ const getRelativeTime = (dateString: string) => {
               ></textarea>
             </div>
 
-            <!-- Tags -->
             <div class="tags-section">
               <label class="section-label">Tags (optional)</label>
               <div class="tags-input-container">
-                <input 
-                  @keyup.enter="addTag($event.target.value); $event.target.value = ''"
+                <input
+                  @keyup.enter="onTagEnter($event)"
                   placeholder="Add a tag and press Enter..."
                   class="tags-input"
                 />
                 <div class="tags-list">
-                  <span 
-                    v-for="tag in newEntry.tags" 
-                    :key="tag"
-                    class="tag"
-                  >
+                  <span v-for="tag in newEntry.tags" :key="tag" class="tag">
                     {{ tag }}
                     <button @click="removeTag(tag)" class="tag-remove">
                       <Icon icon="lucide:x" class="tag-icon" />
@@ -447,12 +329,9 @@ const getRelativeTime = (dateString: string) => {
             </div>
           </div>
         </div>
-        
         <div class="modal-footer">
-          <button @click="showNewEntry = false" class="cancel-btn">
-            Cancel
-          </button>
-          <button @click="saveEntry" class="save-btn">
+          <button @click="showNewEntry = false" class="rounded-md border px-3 py-2 text-sm hover:bg-secondary">Cancel</button>
+          <button @click="saveEntry" class="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
             <Icon icon="lucide:save" class="btn-icon" />
             Save Entry
           </button>
@@ -460,67 +339,40 @@ const getRelativeTime = (dateString: string) => {
       </div>
     </div>
 
-    <!-- Journal Entries -->
-    <div class="entries-section">
-      <h2 class="section-title">
-        {{ currentView === 'today' ? 'Today\'s Entries' : 'All Entries' }}
-        <span class="entry-count">({{ filteredEntries.length }})</span>
-      </h2>
-      
-      <div class="entries-list">
-        <div 
-          v-for="entry in filteredEntries" 
-          :key="entry.id"
-          class="entry-item"
-        >
-          <div class="entry-header">
-            <div class="entry-info">
-              <h3 class="entry-title">{{ entry.title }}</h3>
-              <div class="entry-meta">
-                <span class="entry-date">{{ formatDate(entry.date) }}</span>
-                <span class="entry-time">{{ getRelativeTime(entry.createdAt) }}</span>
-                <span v-if="entry.mood" class="entry-mood">
-                  {{ getMoodEmoji(entry.mood) }} {{ getMoodLabel(entry.mood) }}
-                </span>
-              </div>
-            </div>
-            
-            <div class="entry-actions">
-              <button @click="deleteEntry(entry.id)" class="delete-btn">
-                <Icon icon="lucide:trash-2" class="action-icon" />
-              </button>
-            </div>
-          </div>
-          
-          <div class="entry-content">
-            <p class="entry-text">{{ entry.content }}</p>
-          </div>
-          
-          <div v-if="entry.tags.length > 0" class="entry-tags">
-            <span 
-              v-for="tag in entry.tags" 
-              :key="tag"
-              class="tag"
-            >
-              #{{ tag }}
-            </span>
-          </div>
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div v-for="entry in filteredEntries" :key="entry.id" class="rounded-2xl border bg-card flex flex-col">
+        <div class="p-6 border-b">
+          <div class="font-headline text-lg">{{ entry.title }}</div>
+          <div class="text-sm text-muted-foreground">{{ formatDate(entry.date) }}</div>
+        </div>
+        <div class="p-6 flex-grow">
+          <p class="text-sm text-muted-foreground line-clamp-4">{{ entry.content }}</p>
+        </div>
+        <div class="p-6 pt-0">
+          <button class="text-sm text-primary hover:underline" @click="openEntry(entry)">Read more</button>
         </div>
       </div>
-      
-      <!-- Empty State -->
-      <div v-if="filteredEntries.length === 0" class="empty-state">
-        <Icon icon="lucide:book-open" class="empty-icon" />
-        <h3 class="empty-title">
-          {{ searchQuery ? 'No entries found' : 'No journal entries yet' }}
-        </h3>
-        <p class="empty-description">
-          {{ searchQuery ? 'Try adjusting your search terms' : 'Start your journaling journey by writing your first entry.' }}
-        </p>
-        <button v-if="!searchQuery" @click="startNewEntry" class="empty-action">
-          <Icon icon="lucide:plus" class="action-icon" />
-          Write Your First Entry
-        </button>
+    </div>
+
+    <!-- Read Entry Modal -->
+    <div v-if="showEntryModal && selectedEntry" class="modal-overlay" @click="closeEntry()">
+      <div class="modal-content rounded-2xl border bg-card" @click.stop>
+        <div class="modal-header">
+          <h2 class="modal-title">{{ selectedEntry.title }}</h2>
+          <button @click="closeEntry()" class="rounded-md border px-2 py-2 hover:bg-secondary">
+            <Icon icon="lucide:x" class="close-icon" />
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="text-sm text-muted-foreground mb-4">{{ formatDate(selectedEntry.date) }}</div>
+          <div class="whitespace-pre-wrap text-foreground leading-relaxed text-sm">{{ selectedEntry.content }}</div>
+          <div v-if="selectedEntry.tags && selectedEntry.tags.length" class="entry-tags mt-4">
+            <span v-for="tag in selectedEntry.tags" :key="tag" class="tag">#{{ tag }}</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="closeEntry()" class="rounded-md border px-3 py-2 text-sm hover:bg-secondary">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -537,8 +389,8 @@ const getRelativeTime = (dateString: string) => {
 
 /* Header */
 .journal-header {
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -555,7 +407,7 @@ const getRelativeTime = (dateString: string) => {
 .page-title {
   font-size: 2rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -566,7 +418,7 @@ const getRelativeTime = (dateString: string) => {
 
 .title-icon {
   font-size: 1.5rem;
-  color: #8b5cf6;
+  color: hsl(var(--primary));
 }
 
 .header-actions {
@@ -589,7 +441,7 @@ const getRelativeTime = (dateString: string) => {
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   color: #fff;
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
@@ -611,8 +463,8 @@ const getRelativeTime = (dateString: string) => {
 }
 
 .stat-card {
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -648,7 +500,7 @@ const getRelativeTime = (dateString: string) => {
 
 .stat-icon {
   font-size: 24px;
-  color: #8b5cf6;
+  color: hsl(var(--primary));
   flex-shrink: 0;
 }
 
@@ -666,7 +518,7 @@ const getRelativeTime = (dateString: string) => {
 
 .stat-label {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
   font-weight: 500;
 }
 
@@ -674,8 +526,8 @@ const getRelativeTime = (dateString: string) => {
 .view-toggle {
   display: flex;
   gap: 8px;
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 4px;
   backdrop-filter: blur(2px);
@@ -689,7 +541,7 @@ const getRelativeTime = (dateString: string) => {
   border-radius: 8px;
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
@@ -699,7 +551,7 @@ const getRelativeTime = (dateString: string) => {
 
 .toggle-btn:hover {
   background: rgba(139, 92, 246, 0.1);
-  color: #e2e8f0;
+  color: hsl(var(--foreground));
 }
 
 .toggle-btn.active {
@@ -714,8 +566,8 @@ const getRelativeTime = (dateString: string) => {
 
 /* Search Section */
 .search-section {
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -732,7 +584,7 @@ const getRelativeTime = (dateString: string) => {
   top: 50%;
   transform: translateY(-50%);
   font-size: 18px;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
 }
 
 .search-input {
@@ -741,13 +593,13 @@ const getRelativeTime = (dateString: string) => {
   background: rgba(15, 15, 25, 0.8);
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 10px;
-  color: #e2e8f0;
+  color: hsl(var(--foreground));
   font-size: 14px;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: hsl(var(--primary));
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
@@ -768,14 +620,11 @@ const getRelativeTime = (dateString: string) => {
 }
 
 .modal-content {
-  background: var(--color-surface, rgba(15, 15, 25, 0.9));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
-  border-radius: 16px;
   max-width: 800px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  backdrop-filter: blur(2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .modal-header {
@@ -849,7 +698,7 @@ const getRelativeTime = (dateString: string) => {
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   border: none;
   border-radius: 10px;
   color: #fff;
@@ -859,7 +708,7 @@ const getRelativeTime = (dateString: string) => {
 }
 
 .save-btn:hover {
-  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }

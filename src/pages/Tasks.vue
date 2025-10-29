@@ -5,11 +5,13 @@ import { useLocalStorage } from '../utils/storage'
 
 // Task state
 const currentView = ref<'today' | 'backlog'>('today')
+const currentFilter = ref<'all' | 'todo' | 'inprogress' | 'done'>('all')
 const showCompleted = ref(false)
 const newTaskText = ref('')
 const newTaskPriority = ref<'high' | 'medium' | 'low'>('medium')
 
 // Tasks data with local storage persistence
+type TaskStatus = 'todo' | 'inprogress' | 'done'
 const tasks = useLocalStorage<Array<{
   id: number
   text: string
@@ -17,6 +19,7 @@ const tasks = useLocalStorage<Array<{
   priority: 'high' | 'medium' | 'low'
   dueDate: string
   category: string
+  status?: TaskStatus
 }>>('tasks', [])
 
 // Function to get the correct current date in local timezone
@@ -28,6 +31,15 @@ const getCurrentDate = () => {
   const day = String(now.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
+
+// Ensure existing tasks have a status
+const ensureStatuses = () => {
+  tasks.value = tasks.value.map(t => {
+    const status: TaskStatus = t.status ?? (t.completed ? 'done' : 'todo')
+    return { ...t, status }
+  })
+}
+ensureStatuses()
 
 // Computed properties
 const todayTasks = computed(() => {
@@ -41,8 +53,28 @@ const backlogTasks = computed(() => {
 })
 
 const filteredTasks = computed(() => {
-  const taskList = currentView.value === 'today' ? todayTasks.value : backlogTasks.value
-  return showCompleted.value ? taskList : taskList.filter(task => !task.completed)
+  const taskList = (currentView.value === 'today' ? todayTasks.value : backlogTasks.value)
+  const withStatus = taskList.map(t => ({ ...t, status: (t.status ?? (t.completed ? 'done' : 'todo')) as TaskStatus }))
+  let byFilter = withStatus
+  switch (currentFilter.value) {
+    case 'todo':
+      byFilter = withStatus.filter(t => t.status === 'todo')
+      break
+    case 'inprogress':
+      byFilter = withStatus.filter(t => t.status === 'inprogress')
+      break
+    case 'done':
+      byFilter = withStatus.filter(t => t.status === 'done')
+      break
+    case 'all':
+    default:
+      byFilter = withStatus
+  }
+  // Hide completed in non-done views unless explicitly shown
+  if (currentFilter.value !== 'done' && !showCompleted.value) {
+    byFilter = byFilter.filter(t => !t.completed)
+  }
+  return byFilter
 })
 
 const completedTasks = computed(() => {
@@ -63,7 +95,7 @@ const completionRate = computed(() => {
 const toggleTask = (taskId: number) => {
   tasks.value = tasks.value.map(task => 
     task.id === taskId 
-      ? { ...task, completed: !task.completed }
+      ? { ...task, completed: !task.completed, status: (!task.completed ? 'done' : (task.status === 'done' ? 'todo' : (task.status ?? 'todo'))) as TaskStatus }
       : task
   )
 }
@@ -79,7 +111,8 @@ const addTask = () => {
     completed: false,
     priority: newTaskPriority.value,
     dueDate: today,
-    category: 'general'
+    category: 'general',
+    status: 'todo' as TaskStatus
   }
   
   tasks.value = [...tasks.value, newTask]
@@ -88,17 +121,21 @@ const addTask = () => {
   console.log('Task created for today:', today, newTask)
 }
 
-const moveAllToToday = () => {
-  const today = getCurrentDate()
-  tasks.value = tasks.value.map(task => ({
-    ...task,
-    dueDate: today
-  }))
-  console.log('All tasks moved to today:', today)
-}
+// Removed backlog UI: function no longer used
 
 const deleteTask = (taskId: number) => {
   tasks.value = tasks.value.filter(task => task.id !== taskId)
+}
+
+const setStatus = (taskId: number, status: TaskStatus) => {
+  tasks.value = tasks.value.map(task => task.id === taskId ? { ...task, status, completed: status === 'done' ? true : task.completed } : task)
+}
+
+const onStatusChange = (taskId: number, e: Event) => {
+  const target = e.target as HTMLSelectElement | null
+  if (!target) return
+  const value = (target.value as TaskStatus)
+  setStatus(taskId, value)
 }
 
 const getPriorityColor = (priority: string) => {
@@ -112,145 +149,85 @@ const getPriorityColor = (priority: string) => {
 </script>
 
 <template>
-  <div class="tasks-page">
-    <!-- Header -->
-    <div class="tasks-header">
-      <div class="header-content">
-        <h1 class="page-title">
-          <Icon icon="lucide:clipboard-list" class="title-icon" />
-          {{ currentView === 'today' ? 'Today\'s Tasks' : 'Backlog' }}
-        </h1>
-        <div class="header-actions">
-          <button 
-            @click="moveAllToToday"
-            v-if="currentView === 'backlog'"
-            class="action-btn"
-          >
-            <Icon icon="lucide:arrow-right" class="btn-icon" />
-            Move All to Today
-          </button>
-          <button @click="addTask" class="action-btn primary">
-            <Icon icon="lucide:plus" class="btn-icon" />
-            Add Task
-          </button>
+  <div class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+    
+
+    <!-- Kanban Filters + Progress Card -->
+    <div class="rounded-2xl border bg-card">
+      <div class="flex flex-col gap-4 p-6">
+        <div class="flex flex-wrap items-center gap-2">
+          <button @click="currentFilter = 'all'" :class="['rounded-md px-3 py-1.5 text-sm border', currentFilter==='all' ? 'bg-secondary' : '']">All</button>
+          <button @click="currentFilter = 'todo'" :class="['rounded-md px-3 py-1.5 text-sm border', currentFilter==='todo' ? 'bg-secondary' : '']">To Do</button>
+          <button @click="currentFilter = 'inprogress'" :class="['rounded-md px-3 py-1.5 text-sm border', currentFilter==='inprogress' ? 'bg-secondary' : '']">In Progress</button>
+          <button @click="currentFilter = 'done'" :class="['rounded-md px-3 py-1.5 text-sm border', currentFilter==='done' ? 'bg-secondary' : '']">Done</button>
+          <label class="ml-auto inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <input type="checkbox" v-model="showCompleted" class="h-4 w-4" />
+            Show completed
+          </label>
         </div>
-      </div>
+        <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <div class="text-2xl font-bold">{{ completedTasks }}</div>
+          <div class="text-xs text-muted-foreground">Completed</div>
+        </div>
+        <div>
+          <div class="text-2xl font-bold">{{ totalTasks - completedTasks }}</div>
+          <div class="text-xs text-muted-foreground">Pending</div>
+        </div>
+        <div>
+          <div class="text-2xl font-bold">{{ completionRate }}%</div>
+          <div class="text-xs text-muted-foreground">Complete</div>
+        </div>
+        </div>
+        <div>
+        <div class="w-full h-2 rounded bg-secondary overflow-hidden">
+          <div class="h-2 bg-primary" :style="{ width: `${completionRate}%` }"></div>
+        </div>
+        </div>
+    </div>
     </div>
 
-    <!-- View Toggle -->
-    <div class="view-toggle">
-      <button 
-        @click="currentView = 'today'"
-        :class="['toggle-btn', { active: currentView === 'today' }]"
-      >
-        <Icon icon="lucide:calendar" class="toggle-icon" />
-        Today
-      </button>
-      <button 
-        @click="currentView = 'backlog'"
-        :class="['toggle-btn', { active: currentView === 'backlog' }]"
-      >
-        <Icon icon="lucide:archive" class="toggle-icon" />
-        Backlog
-      </button>
-    </div>
-
-    <!-- Progress Stats -->
-    <div class="progress-section">
-      <div class="progress-stats">
-        <div class="stat">
-          <span class="stat-number">{{ completedTasks }}</span>
-          <span class="stat-label">Completed</span>
-        </div>
-        <div class="stat">
-          <span class="stat-number">{{ totalTasks - completedTasks }}</span>
-          <span class="stat-label">Pending</span>
-        </div>
-        <div class="stat">
-          <span class="stat-number">{{ completionRate }}%</span>
-          <span class="stat-label">Complete</span>
-        </div>
-      </div>
-      <div class="progress-bar">
-        <div 
-          class="progress-fill" 
-          :style="{ width: `${completionRate}%` }"
-        ></div>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="filters">
-      <label class="filter-item">
-        <input 
-          type="checkbox" 
-          v-model="showCompleted"
-          class="filter-checkbox"
-        />
-        <span class="filter-label">Show completed</span>
-      </label>
-    </div>
-
-    <!-- Quick Add Task -->
-    <div class="quick-add">
-      <div class="add-form">
-        <input 
-          v-model="newTaskText"
-          @keyup.enter="addTask"
-          placeholder="Quick add task..."
-          class="task-input"
-        />
-        <select v-model="newTaskPriority" class="priority-select">
+    <!-- Quick Add Card -->
+    <div class="rounded-2xl border bg-card p-4">
+      <div class="flex flex-col md:flex-row gap-3 items-stretch">
+        <input v-model="newTaskText" @keyup.enter="addTask" placeholder="Quick add task..." class="flex-1 rounded-md border bg-background px-3 py-2 text-sm" />
+        <select v-model="newTaskPriority" class="rounded-md border bg-background px-3 py-2 text-sm md:w-40">
           <option value="high">High</option>
           <option value="medium">Medium</option>
           <option value="low">Low</option>
         </select>
-        <button @click="addTask" class="add-btn">
-          <Icon icon="lucide:plus" class="add-icon" />
-        </button>
+        <button @click="addTask" class="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground md:w-32">Add</button>
       </div>
     </div>
 
-    <!-- Tasks List -->
-    <div class="tasks-list">
-      <div 
-        v-for="task in filteredTasks" 
-        :key="task.id"
-        :class="['task-item', { completed: task.completed }]"
-      >
-        <div class="task-checkbox" @click="toggleTask(task.id)">
-          <Icon 
-            :icon="task.completed ? 'lucide:check-circle' : 'lucide:circle'" 
-            class="checkbox-icon"
-          />
-        </div>
-        
-        <div class="task-content">
-          <div class="task-main">
-            <span class="task-text">{{ task.text }}</span>
-            <div class="task-meta">
-              <span :class="['task-priority', getPriorityColor(task.priority)]">
-                {{ task.priority }}
-              </span>
-              <span class="task-date">{{ task.dueDate }}</span>
+    <!-- Tasks List Card -->
+    <div class="rounded-2xl border bg-card">
+      <div class="divide-y">
+        <div v-for="task in filteredTasks" :key="task.id" class="flex items-center gap-3 p-4">
+          <button @click="toggleTask(task.id)" class="grid h-5 w-5 place-items-center rounded-full" :class="task.completed ? 'bg-primary text-primary-foreground' : 'bg-secondary'">
+            <Icon v-if="task.completed" icon="lucide:check-circle-2" class="h-4 w-4" />
+          </button>
+          <div class="flex-1">
+            <div :class="['text-sm', task.completed ? 'line-through text-muted-foreground' : '']">{{ task.text }}</div>
+            <div class="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <span :class="['rounded border px-2 py-0.5', getPriorityColor(task.priority)]">{{ task.priority }}</span>
+              <span>{{ task.dueDate }}</span>
             </div>
           </div>
-          
-          <div class="task-actions">
-            <button @click="deleteTask(task.id)" class="delete-btn">
-              <Icon icon="lucide:trash-2" class="action-icon" />
-            </button>
-          </div>
+          <select class="rounded-md border bg-background px-2 py-1 text-xs" :value="(task.status ?? (task.completed ? 'done' : 'todo'))" @change="onStatusChange(task.id, $event)">
+            <option value="todo">To Do</option>
+            <option value="inprogress">In Progress</option>
+            <option value="done">Done</option>
+          </select>
+          <button @click="deleteTask(task.id)" class="rounded-md border px-2 py-1 text-xs hover:bg-secondary">
+            <Icon icon="lucide:trash-2" class="h-4 w-4" />
+          </button>
         </div>
       </div>
-      
-      <!-- Empty State -->
-      <div v-if="filteredTasks.length === 0" class="empty-state">
-        <Icon icon="lucide:clipboard-x" class="empty-icon" />
-        <h3 class="empty-title">No tasks yet</h3>
-        <p class="empty-description">
-          {{ currentView === 'today' ? 'Add some tasks for today!' : 'Your backlog is empty.' }}
-        </p>
+      <div v-if="filteredTasks.length === 0" class="p-12 text-center text-muted-foreground">
+        <Icon icon="lucide:clipboard-x" class="mx-auto mb-2 h-10 w-10 text-primary" />
+        <div class="font-medium text-foreground">No tasks yet</div>
+        <div class="text-sm">{{ currentView === 'today' ? 'Add some tasks for today!' : 'Your backlog is empty.' }}</div>
       </div>
     </div>
   </div>
@@ -267,8 +244,8 @@ const getPriorityColor = (priority: string) => {
 
 /* Header */
 .tasks-header {
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -285,7 +262,7 @@ const getPriorityColor = (priority: string) => {
 .page-title {
   font-size: 2rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -296,7 +273,7 @@ const getPriorityColor = (priority: string) => {
 
 .title-icon {
   font-size: 1.5rem;
-  color: #8b5cf6;
+  color: hsl(var(--primary));
 }
 
 .header-actions {
@@ -321,11 +298,11 @@ const getPriorityColor = (priority: string) => {
 .action-btn:not(.primary) {
   background: rgba(15, 15, 25, 0.8);
   border: 1px solid rgba(139, 92, 246, 0.3);
-  color: #e2e8f0;
+  color: hsl(var(--foreground));
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   color: #fff;
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
@@ -343,8 +320,8 @@ const getPriorityColor = (priority: string) => {
 .view-toggle {
   display: flex;
   gap: 8px;
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 4px;
   backdrop-filter: blur(2px);
@@ -358,7 +335,7 @@ const getPriorityColor = (priority: string) => {
   border-radius: 8px;
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
@@ -368,7 +345,7 @@ const getPriorityColor = (priority: string) => {
 
 .toggle-btn:hover {
   background: rgba(139, 92, 246, 0.1);
-  color: #e2e8f0;
+  color: hsl(var(--foreground));
 }
 
 .toggle-btn.active {
@@ -383,8 +360,8 @@ const getPriorityColor = (priority: string) => {
 
 /* Progress Section */
 .progress-section {
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -412,7 +389,7 @@ const getPriorityColor = (priority: string) => {
 
 .stat-label {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
   font-weight: 500;
 }
 
@@ -426,7 +403,7 @@ const getPriorityColor = (priority: string) => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #8b5cf6, #a855f7);
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)));
   border-radius: 4px;
   transition: width 0.3s ease;
 }
@@ -443,14 +420,14 @@ const getPriorityColor = (priority: string) => {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
   font-weight: 500;
 }
 
 .filter-checkbox {
   width: 16px;
   height: 16px;
-  accent-color: #8b5cf6;
+  accent-color: hsl(var(--primary));
 }
 
 .filter-label {
@@ -459,8 +436,8 @@ const getPriorityColor = (priority: string) => {
 
 /* Quick Add */
 .quick-add {
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 20px;
   backdrop-filter: blur(2px);
@@ -478,13 +455,13 @@ const getPriorityColor = (priority: string) => {
   background: rgba(15, 15, 25, 0.8);
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 10px;
-  color: #e2e8f0;
+  color: hsl(var(--foreground));
   font-size: 14px;
 }
 
 .task-input:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: hsl(var(--primary));
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
@@ -493,7 +470,7 @@ const getPriorityColor = (priority: string) => {
   background: rgba(15, 15, 25, 0.8);
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 10px;
-  color: #e2e8f0;
+  color: hsl(var(--foreground));
   font-size: 14px;
   min-width: 100px;
 }
@@ -504,7 +481,7 @@ const getPriorityColor = (priority: string) => {
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   border: none;
   border-radius: 10px;
   color: #fff;

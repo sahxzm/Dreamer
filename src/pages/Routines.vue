@@ -38,6 +38,10 @@ const currentStreak = computed(() => {
   return Math.max(...routines.value.map(r => r.streak))
 })
 
+const totalCompletionsAll = computed(() => {
+  return routines.value.reduce((sum, r) => sum + r.totalCompletions, 0)
+})
+
 // Routine actions
 const addRoutine = () => {
   if (!newRoutineName.value.trim()) return
@@ -110,16 +114,19 @@ const getCategoryColor = (category: string) => {
 </script>
 
 <template>
-  <div class="routines-page">
+  <div class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
     <!-- Header -->
-    <div class="routines-header">
-      <div class="header-content">
-        <h1 class="page-title">
-          <Icon icon="lucide:refresh-cw" class="title-icon" />
-          Routine Tracker
-        </h1>
-        <div class="header-actions">
-          <button @click="addRoutine" class="action-btn primary">
+    <div class="rounded-2xl border bg-card">
+      <div class="flex items-center justify-between p-6 flex-wrap gap-4">
+        <div>
+          <h1 class="page-title">
+            <Icon icon="lucide:refresh-cw" class="title-icon" />
+            Routines
+          </h1>
+          <p class="text-muted-foreground text-sm">Track and build your daily and weekly habits.</p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button @click="addRoutine" class="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
             <Icon icon="lucide:plus" class="btn-icon" />
             Add Routine
           </button>
@@ -128,18 +135,17 @@ const getCategoryColor = (category: string) => {
     </div>
 
     <!-- Statistics -->
-    <div class="stats-grid">
-      <div class="stat-card">
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-2xl border bg-card p-6">
         <div class="stat-icon">
-          <Icon icon="lucide:clock" />
+          <Icon icon="lucide:repeat" />
         </div>
         <div class="stat-content">
-          <div class="stat-number">{{ totalRoutines }}</div>
-          <div class="stat-label">Total Routines</div>
+          <div class="stat-number">{{ totalCompletionsAll }}</div>
+          <div class="stat-label">Total Completions</div>
         </div>
       </div>
-
-      <div class="stat-card">
+      <div class="rounded-2xl border bg-card p-6">
         <div class="stat-icon">
           <Icon icon="lucide:check-circle" />
         </div>
@@ -148,128 +154,85 @@ const getCategoryColor = (category: string) => {
           <div class="stat-label">Today's Completions</div>
         </div>
       </div>
-
-      <div class="stat-card">
+      <div class="rounded-2xl border bg-card p-6">
         <div class="stat-icon">
-          <Icon icon="lucide:bar-chart" />
+          <Icon icon="lucide:trending-up" />
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ weeklyCompletions }}</div>
-          <div class="stat-label">This Week</div>
+          <div class="stat-label">Weekly Completions</div>
         </div>
       </div>
-
-      <div class="stat-card">
+      <div class="rounded-2xl border bg-card p-6">
         <div class="stat-icon">
-          <Icon icon="lucide:flame" />
+          <Icon icon="lucide:sparkles" />
         </div>
         <div class="stat-content">
           <div class="stat-number">{{ currentStreak }}</div>
-          <div class="stat-label">Current Streak</div>
+          <div class="stat-label">Longest Streak</div>
         </div>
       </div>
     </div>
 
 
     <!-- Add Routine Form -->
-    <div class="add-routine">
+    <div class="rounded-2xl border bg-card p-6">
       <h2 class="section-title">Add New Routine</h2>
       <div class="add-form">
         <input 
           v-model="newRoutineName"
           placeholder="Routine name..."
-          class="routine-input"
+          class="rounded-md border bg-background px-3 py-2 text-sm flex-1 min-w-[200px]"
         />
-        <select v-model="newRoutineCategory" class="category-select">
+        <select v-model="newRoutineCategory" class="rounded-md border bg-background px-3 py-2 text-sm min-w-[120px]">
           <option value="health">Health</option>
           <option value="learning">Learning</option>
           <option value="mindfulness">Mindfulness</option>
           <option value="work">Work</option>
           <option value="personal">Personal</option>
         </select>
-        <select v-model="newRoutineFrequency" class="frequency-select">
+        <select v-model="newRoutineFrequency" class="rounded-md border bg-background px-3 py-2 text-sm min-w-[120px]">
           <option value="daily">Daily</option>
           <option value="weekly">Weekly</option>
           <option value="monthly">Monthly</option>
         </select>
-        <button @click="addRoutine" class="add-btn">
-          <Icon icon="lucide:plus" class="add-icon" />
+        <button @click="addRoutine" class="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">
+          <Icon icon="lucide:plus" class="inline h-4 w-4 mr-2" />
           Add Routine
         </button>
       </div>
     </div>
 
-    <!-- Today's Routines -->
-    <div class="today-routines">
-      <h2 class="section-title">
-        <Icon icon="lucide:calendar" class="section-icon" />
-        Today's Routines
-      </h2>
-      
-      <div class="routines-list">
-        <div 
-          v-for="routine in activeRoutines" 
-          :key="routine.id"
-          class="routine-item"
-        >
-          <div class="routine-main">
-            <div class="routine-header">
-              <div class="routine-info">
-                <Icon :icon="getCategoryIcon(routine.category)" class="routine-icon" />
-                <div class="routine-details">
-                  <h3 class="routine-name">{{ routine.name }}</h3>
-                  <div class="routine-meta">
-                    <span :class="['routine-category', getCategoryColor(routine.category)]">
-                      {{ routine.category }}
-                    </span>
-                    <span class="routine-frequency">{{ routine.frequency }}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="routine-stats">
-                <div class="stat-item">
-                  <span class="stat-number">{{ routine.streak }}</span>
-                  <span class="stat-label">Streak</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-number">{{ routine.totalCompletions }}</span>
-                  <span class="stat-label">Total</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="routine-actions">
-              <button 
-                @click="completeRoutine(routine.id)"
-                class="complete-btn"
-                :disabled="routine.lastCompleted === new Date().toISOString().split('T')[0]"
-              >
-                <Icon icon="lucide:check" class="action-icon" />
-                {{ routine.lastCompleted === new Date().toISOString().split('T')[0] ? 'Completed' : 'Complete' }}
-              </button>
-              
-              <button @click="toggleRoutine(routine.id)" class="toggle-btn">
-                <Icon :icon="routine.isActive ? 'lucide:pause' : 'lucide:play'" class="action-icon" />
-              </button>
-              
-              <button @click="deleteRoutine(routine.id)" class="delete-btn">
-                <Icon icon="lucide:trash-2" class="action-icon" />
-              </button>
-            </div>
+    <!-- Routines List -->
+    <div class="grid gap-6">
+      <div 
+        v-for="routine in activeRoutines" 
+        :key="routine.id"
+        class="rounded-2xl border bg-card p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between"
+      >
+        <div class="flex-1 mb-4 sm:mb-0">
+          <h3 class="font-headline text-lg">{{ routine.name }}</h3>
+          <div class="text-muted-foreground text-sm">{{ routine.category }} - {{ routine.frequency }}</div>
+          <div class="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+            <span>Streak: {{ routine.streak }} days</span>
+            <span>Total: {{ routine.totalCompletions }}</span>
           </div>
         </div>
+        <div class="flex items-center gap-2">
+          <button @click="completeRoutine(routine.id)" class="rounded-md border px-3 py-2 text-sm hover:bg-secondary" :disabled="routine.lastCompleted === new Date().toISOString().split('T')[0]">
+            Mark Complete
+          </button>
+          <button @click="toggleRoutine(routine.id)" class="rounded-md px-3 py-2 text-sm hover:bg-secondary">
+            Toggle Active
+          </button>
+          <button @click="deleteRoutine(routine.id)" class="rounded-md px-3 py-2 text-sm text-red-500 hover:bg-secondary">
+            Delete
+          </button>
+        </div>
       </div>
-      
-      <!-- Empty State -->
-      <div v-if="activeRoutines.length === 0" class="empty-state">
-        <Icon icon="lucide:target" class="empty-icon" />
-        <h3 class="empty-title">No Routines Yet</h3>
-        <p class="empty-description">Create your first routine to start tracking your daily habits.</p>
-        <button class="empty-action">
-          <Icon icon="lucide:plus" class="action-icon" />
-          Add Routine
-        </button>
+      <div v-if="activeRoutines.length === 0" class="p-12 text-center text-muted-foreground rounded-2xl border bg-card">
+        <div class="font-medium text-foreground">No Routines Yet</div>
+        <div class="text-sm">Create your first routine to start tracking your daily habits.</div>
       </div>
     </div>
   </div>
@@ -286,8 +249,8 @@ const getCategoryColor = (category: string) => {
 
 /* Header */
 .routines-header {
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -304,10 +267,7 @@ const getCategoryColor = (category: string) => {
 .page-title {
   font-size: 2rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #fff;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -315,7 +275,7 @@ const getCategoryColor = (category: string) => {
 
 .title-icon {
   font-size: 1.5rem;
-  color: #8b5cf6;
+  color: hsl(var(--primary));
 }
 
 .header-actions {
@@ -340,11 +300,11 @@ const getCategoryColor = (category: string) => {
 .action-btn:not(.primary) {
   background: rgba(15, 15, 25, 0.8);
   border: 1px solid rgba(139, 92, 246, 0.3);
-  color: #e2e8f0;
+  color: hsl(var(--foreground));
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   color: #fff;
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
@@ -366,8 +326,8 @@ const getCategoryColor = (category: string) => {
 }
 
 .stat-card {
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -403,7 +363,7 @@ const getCategoryColor = (category: string) => {
 
 .stat-icon {
   font-size: 24px;
-  color: #8b5cf6;
+  color: hsl(var(--primary));
   flex-shrink: 0;
 }
 
@@ -421,7 +381,7 @@ const getCategoryColor = (category: string) => {
 
 .stat-label {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
   font-weight: 500;
 }
 
@@ -437,13 +397,13 @@ const getCategoryColor = (category: string) => {
 
 .section-icon {
   font-size: 20px;
-  color: #8b5cf6;
+  color: hsl(var(--primary));
 }
 
 /* Add Routine Form */
 .add-routine {
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -463,13 +423,13 @@ const getCategoryColor = (category: string) => {
   background: rgba(15, 15, 25, 0.8);
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 10px;
-  color: #e2e8f0;
+  color: hsl(var(--foreground));
   font-size: 14px;
 }
 
 .routine-input:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: hsl(var(--primary));
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
@@ -478,7 +438,7 @@ const getCategoryColor = (category: string) => {
   background: rgba(15, 15, 25, 0.8);
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 10px;
-  color: #e2e8f0;
+  color: hsl(var(--foreground));
   font-size: 14px;
   min-width: 120px;
 }
@@ -488,7 +448,7 @@ const getCategoryColor = (category: string) => {
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   border: none;
   border-radius: 10px;
   color: #fff;
@@ -498,7 +458,7 @@ const getCategoryColor = (category: string) => {
 }
 
 .add-btn:hover {
-  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }
@@ -509,8 +469,8 @@ const getCategoryColor = (category: string) => {
 
 /* Today's Routines */
 .today-routines {
-  background: var(--color-surface, rgba(15, 15, 25, 0.5));
-  border: 1px solid var(--color-border, rgba(139, 92, 246, 0.2));
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   padding: 24px;
   backdrop-filter: blur(2px);
@@ -532,7 +492,7 @@ const getCategoryColor = (category: string) => {
 
 .routine-item:hover {
   background: color-mix(in oklab, var(--color-surface), transparent 10%);
-  border-color: var(--color-border, rgba(139, 92, 246, 0.2));
+  border-color: var(--color-border);
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
 }
@@ -560,7 +520,7 @@ const getCategoryColor = (category: string) => {
 
 .routine-icon {
   font-size: 24px;
-  color: #8b5cf6;
+  color: hsl(var(--primary));
   flex-shrink: 0;
 }
 
@@ -593,7 +553,7 @@ const getCategoryColor = (category: string) => {
 
 .routine-frequency {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
   font-weight: 500;
 }
 
@@ -617,7 +577,7 @@ const getCategoryColor = (category: string) => {
 
 .stat-item .stat-label {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
   font-weight: 500;
 }
 
@@ -669,7 +629,7 @@ const getCategoryColor = (category: string) => {
 .toggle-btn {
   background: rgba(139, 92, 246, 0.1);
   border: 1px solid rgba(139, 92, 246, 0.2);
-  color: #8b5cf6;
+  color: hsl(var(--primary));
 }
 
 .toggle-btn:hover {
@@ -706,7 +666,7 @@ const getCategoryColor = (category: string) => {
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #94a3b8;
+  color: hsl(var(--muted-foreground));
 }
 
 .empty-icon {
@@ -733,7 +693,7 @@ const getCategoryColor = (category: string) => {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   border: none;
   border-radius: 10px;
   color: #fff;
@@ -744,7 +704,7 @@ const getCategoryColor = (category: string) => {
 }
 
 .empty-action:hover {
-  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
 }
