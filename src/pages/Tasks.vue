@@ -5,7 +5,7 @@ import { useLocalStorage } from '../utils/storage'
 
 // Task state
 const currentView = ref<'today' | 'backlog'>('today')
-const currentFilter = ref<'all' | 'todo' | 'inprogress' | 'done'>('all')
+const currentFilter = ref<'all' | 'todo' | 'inprogress' | 'notdone' | 'done'>('all')
 const showCompleted = ref(false)
 const newTaskText = ref('')
 const newTaskPriority = ref<'high' | 'medium' | 'low'>('medium')
@@ -53,7 +53,7 @@ const backlogTasks = computed(() => {
 })
 
 const filteredTasks = computed(() => {
-  const taskList = (currentView.value === 'today' ? todayTasks.value : backlogTasks.value)
+  const taskList = (currentFilter.value === 'notdone' ? tasks.value : (currentView.value === 'today' ? todayTasks.value : backlogTasks.value))
   const withStatus = taskList.map(t => ({ ...t, status: (t.status ?? (t.completed ? 'done' : 'todo')) as TaskStatus }))
   let byFilter = withStatus
   switch (currentFilter.value) {
@@ -62,6 +62,9 @@ const filteredTasks = computed(() => {
       break
     case 'inprogress':
       byFilter = withStatus.filter(t => t.status === 'inprogress')
+      break
+    case 'notdone':
+      byFilter = withStatus.filter(t => !t.completed)
       break
     case 'done':
       byFilter = withStatus.filter(t => t.status === 'done')
@@ -73,6 +76,10 @@ const filteredTasks = computed(() => {
   // Hide completed in non-done views unless explicitly shown
   if (currentFilter.value !== 'done' && !showCompleted.value) {
     byFilter = byFilter.filter(t => !t.completed)
+  }
+  // For Not Done view, sort by due date ascending (past to current)
+  if (currentFilter.value === 'notdone') {
+    byFilter = [...byFilter].sort((a, b) => a.dueDate.localeCompare(b.dueDate))
   }
   return byFilter
 })
@@ -159,6 +166,7 @@ const getPriorityColor = (priority: string) => {
           <button @click="currentFilter = 'all'" :class="['rounded-md px-3 py-1.5 text-sm border', currentFilter==='all' ? 'bg-secondary' : '']">All</button>
           <button @click="currentFilter = 'todo'" :class="['rounded-md px-3 py-1.5 text-sm border', currentFilter==='todo' ? 'bg-secondary' : '']">To Do</button>
           <button @click="currentFilter = 'inprogress'" :class="['rounded-md px-3 py-1.5 text-sm border', currentFilter==='inprogress' ? 'bg-secondary' : '']">In Progress</button>
+          <button @click="currentFilter = 'notdone'" :class="['rounded-md px-3 py-1.5 text-sm border', currentFilter==='notdone' ? 'bg-secondary' : '']">Not Done</button>
           <button @click="currentFilter = 'done'" :class="['rounded-md px-3 py-1.5 text-sm border', currentFilter==='done' ? 'bg-secondary' : '']">Done</button>
           <label class="ml-auto inline-flex items-center gap-2 text-sm text-muted-foreground">
             <input type="checkbox" v-model="showCompleted" class="h-4 w-4" />
