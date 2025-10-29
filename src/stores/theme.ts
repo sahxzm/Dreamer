@@ -132,7 +132,7 @@ export const useThemeStore = defineStore('theme', () => {
     if (bg && bg.type === 'image' && bg.value) {
       localStorage.setItem('custom-background', bg.value)
       root.style.setProperty('--custom-background-image', `url(${bg.value})`)
-      root.style.setProperty('--background-opacity', '0.1')
+      root.style.setProperty('--background-opacity', '0.8')
     } else {
       localStorage.removeItem('custom-background')
       root.style.removeProperty('--custom-background-image')
